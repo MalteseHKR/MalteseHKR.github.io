@@ -77,6 +77,121 @@ function typeWriter() {
     setTimeout(typeWriter, typingSpeed);
 }
 
+// Gallery toggle functionality
+function toggleGallery() {
+    const gallery = document.querySelector('.image-gallery');
+    const button = document.querySelector('.btn-gallery');
+    
+    if (gallery.classList.contains('gallery-expanded')) {
+        gallery.classList.remove('gallery-expanded');
+        button.textContent = 'View All Screenshots';
+    } else {
+        gallery.classList.add('gallery-expanded');
+        button.textContent = 'Show Less';
+    }
+}
+
+// Image modal functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const images = document.querySelectorAll('.project-image');
+    
+    images.forEach(img => {
+        img.addEventListener('click', function() {
+            openImageModal(this.src, this.alt);
+        });
+    });
+});
+
+function openImageModal(src, alt) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('imageModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'imageModal';
+        modal.className = 'image-modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <img class="modal-image" src="" alt="">
+                <div class="modal-caption"></div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        // Add modal styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .image-modal {
+                display: none;
+                position: fixed;
+                z-index: 1000;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.8);
+                backdrop-filter: blur(5px);
+            }
+            
+            .modal-content {
+                position: relative;
+                margin: 5% auto;
+                width: 90%;
+                max-width: 600px;
+                text-align: center;
+            }
+            
+            .modal-image {
+                width: 100%;
+                height: auto;
+                max-height: 70vh;
+                object-fit: contain;
+                border-radius: 10px;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            }
+            
+            .close-modal {
+                position: absolute;
+                top: -40px;
+                right: 0;
+                color: white;
+                font-size: 30px;
+                font-weight: bold;
+                cursor: pointer;
+                transition: color 0.3s ease;
+            }
+            
+            .close-modal:hover {
+                color: #ff6b6b;
+            }
+            
+            .modal-caption {
+                color: white;
+                margin-top: 15px;
+                font-size: 1.1rem;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Close modal events
+        modal.querySelector('.close-modal').addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+        
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    }
+    
+    // Set modal content and show
+    modal.querySelector('.modal-image').src = src;
+    modal.querySelector('.modal-image').alt = alt;
+    modal.querySelector('.modal-caption').textContent = alt;
+    modal.style.display = 'block';
+}
+
 // Start typing effect after initial load
 setTimeout(() => {
     typeWriter();
