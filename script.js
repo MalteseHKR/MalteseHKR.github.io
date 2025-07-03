@@ -41,35 +41,29 @@ document.querySelectorAll('.project-card').forEach(card => {
     });
 });
 
-// Carousel functionality
+// Carousel functionality - One image at a time
 let currentSlide = 0;
-let imagesPerSlide = 8; // Number of images to show at once
 let totalImages = 14;
-let totalSlides = Math.ceil(totalImages / imagesPerSlide);
 
 function updateCarousel() {
-    const track = document.getElementById('carouselTrack');
+    const images = document.querySelectorAll('.project-image');
     const counter = document.getElementById('carouselCounter');
     const indicators = document.querySelectorAll('.carousel-dot');
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
     
-    if (!track) return;
+    if (!images.length) return;
     
-    // Calculate how many images can fit in the container
-    const containerWidth = track.parentElement.offsetWidth - 40; // Account for padding
-    const imageWidth = 35 + 8; // Image width + gap
-    imagesPerSlide = Math.floor(containerWidth / imageWidth);
-    totalSlides = Math.ceil(totalImages / imagesPerSlide);
+    // Hide all images
+    images.forEach(img => img.classList.remove('active'));
     
-    // Update transform
-    const translateX = -(currentSlide * imagesPerSlide * imageWidth);
-    track.style.transform = `translateX(${translateX}px)`;
+    // Show current image
+    if (images[currentSlide]) {
+        images[currentSlide].classList.add('active');
+    }
     
     // Update counter
-    const startImage = currentSlide * imagesPerSlide + 1;
-    const endImage = Math.min((currentSlide + 1) * imagesPerSlide, totalImages);
-    counter.textContent = `${startImage}-${endImage} / ${totalImages}`;
+    counter.textContent = `${currentSlide + 1} / ${totalImages}`;
     
     // Update indicators
     indicators.forEach((dot, index) => {
@@ -78,28 +72,40 @@ function updateCarousel() {
     
     // Update buttons
     prevBtn.disabled = currentSlide === 0;
-    nextBtn.disabled = currentSlide === totalSlides - 1;
+    nextBtn.disabled = currentSlide === totalImages - 1;
 }
 
 function moveCarousel(direction) {
     currentSlide += direction;
     if (currentSlide < 0) currentSlide = 0;
-    if (currentSlide >= totalSlides) currentSlide = totalSlides - 1;
+    if (currentSlide >= totalImages) currentSlide = totalImages - 1;
     updateCarousel();
 }
 
 function goToSlide(slideIndex) {
-    currentSlide = slideIndex;
-    updateCarousel();
+    if (slideIndex >= 0 && slideIndex < totalImages) {
+        currentSlide = slideIndex;
+        updateCarousel();
+    }
 }
 
 // Initialize carousel on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Update carousel on load
-    setTimeout(updateCarousel, 100);
+    // Create indicators for all images
+    const indicatorsContainer = document.getElementById('carouselIndicators');
+    if (indicatorsContainer) {
+        indicatorsContainer.innerHTML = '';
+        for (let i = 0; i < totalImages; i++) {
+            const dot = document.createElement('span');
+            dot.className = 'carousel-dot';
+            if (i === 0) dot.classList.add('active');
+            dot.onclick = () => goToSlide(i);
+            indicatorsContainer.appendChild(dot);
+        }
+    }
     
-    // Update carousel on window resize
-    window.addEventListener('resize', updateCarousel);
+    // Initialize first image
+    updateCarousel();
     
     // Image modal functionality
     const images = document.querySelectorAll('.project-image');
@@ -112,13 +118,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Auto-slide functionality (optional)
     setInterval(() => {
-        if (currentSlide < totalSlides - 1) {
+        if (currentSlide < totalImages - 1) {
             moveCarousel(1);
         } else {
             currentSlide = 0;
             updateCarousel();
         }
-    }, 5000); // Auto-slide every 5 seconds
+    }, 4000); // Auto-slide every 4 seconds
 });
 
 // Gallery toggle functionality (keeping for backward compatibility)
