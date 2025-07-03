@@ -214,6 +214,16 @@ nav {
     background: rgba(255, 255, 255, 0.15);
 }
 
+.featured-project {
+    border: 2px solid rgba(255, 107, 107, 0.5);
+    background: rgba(255, 107, 107, 0.1);
+}
+
+.featured-project:hover {
+    border-color: rgba(255, 107, 107, 0.8);
+    box-shadow: 0 20px 40px rgba(255, 107, 107, 0.3);
+}
+
 .project-icon {
     width: 60px;
     height: 60px;
@@ -235,6 +245,214 @@ nav {
     line-height: 1.6;
     opacity: 0.9;
     margin-bottom: 20px;
+}
+
+.project-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.feature-tag {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.project-status {
+    margin-bottom: 15px;
+}
+
+.status-badge {
+    background: rgba(241, 196, 15, 0.2);
+    color: #f1c40f;
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    border: 1px solid rgba(241, 196, 15, 0.3);
+}
+
+.project-images {
+    margin-bottom: 20px;
+}
+
+.image-gallery {
+    position: relative;
+    max-width: 100%;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+}
+
+.gallery-row {
+    display: flex;
+    gap: 8px;
+    transition: transform 0.3s ease;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.gallery-row:nth-child(n+2) {
+    display: none;
+}
+
+.gallery-expanded .gallery-row {
+    display: flex !important;
+}
+
+.project-image {
+    width: 50px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.project-image:hover {
+    transform: scale(1.1);
+    border-color: rgba(255, 107, 107, 0.6);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 5;
+    position: relative;
+}
+
+/* Carousel Version */
+.carousel-container {
+    position: relative;
+    max-width: 100%;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+}
+
+.carousel-track {
+    display: flex;
+    gap: 8px;
+    transition: transform 0.3s ease;
+    align-items: center;
+}
+
+.carousel-nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.carousel-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.carousel-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.carousel-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.carousel-indicators {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.carousel-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.carousel-dot.active {
+    background: #ff6b6b;
+    transform: scale(1.2);
+}
+
+.view-more-btn {
+    text-align: center;
+    margin-top: 15px;
+}
+
+.btn-gallery {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-gallery:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.image-placeholder {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    padding: 20px 15px;
+    text-align: center;
+    font-size: 0.8rem;
+    flex: 1;
+    min-width: 80px;
+    opacity: 0.7;
+    transition: all 0.3s ease;
+}
+
+.image-placeholder:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+    opacity: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .project-image {
+        width: 45px;
+        height: 80px;
+    }
+    
+    .carousel-track {
+        gap: 6px;
+    }
+    
+    .carousel-btn {
+        width: 30px;
+        height: 30px;
+        font-size: 12px;
+    }
 }
 
 .tech-stack {
