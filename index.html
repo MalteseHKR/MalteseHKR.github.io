@@ -69,32 +69,34 @@
                         <span class="tech-tag">GPS Integration</span>
                     </div>
                     <div class="project-images">
-                        <div class="image-gallery">
-                            <div class="gallery-row">
+                        <div class="carousel-container">
+                            <div class="carousel-track" id="carouselTrack">
                                 <img src="assets/mobile_app_1.jpg" alt="Mobile App Screenshot" class="project-image">
                                 <img src="assets/mobile_app_2.jpg" alt="Mobile App Screenshot" class="project-image">
                                 <img src="assets/mobile_app_3.jpg" alt="Mobile App Screenshot" class="project-image">
                                 <img src="assets/mobile_app_4.jpg" alt="Mobile App Screenshot" class="project-image">
-                            </div>
-                            <div class="gallery-row">
                                 <img src="assets/mobile_app_5.jpg" alt="Mobile App Screenshot" class="project-image">
                                 <img src="assets/mobile_app_6.jpg" alt="Mobile App Screenshot" class="project-image">
                                 <img src="assets/mobile_app_7.jpg" alt="Mobile App Screenshot" class="project-image">
                                 <img src="assets/mobile_app_8.jpg" alt="Mobile App Screenshot" class="project-image">
-                            </div>
-                            <div class="gallery-row">
                                 <img src="assets/mobile_app_9.jpg" alt="Mobile App Screenshot" class="project-image">
                                 <img src="assets/mobile_app_10.jpg" alt="Mobile App Screenshot" class="project-image">
                                 <img src="assets/mobile_app_11.jpg" alt="Mobile App Screenshot" class="project-image">
                                 <img src="assets/mobile_app_12.jpg" alt="Mobile App Screenshot" class="project-image">
-                            </div>
-                            <div class="gallery-row">
                                 <img src="assets/mobile_app_13.jpg" alt="Mobile App Screenshot" class="project-image">
                                 <img src="assets/mobile_app_14.jpg" alt="Mobile App Screenshot" class="project-image">
                             </div>
-                        </div>
-                        <div class="view-more-btn">
-                            <button class="btn btn-gallery" onclick="toggleGallery()">View All Screenshots</button>
+                            <div class="carousel-nav">
+                                <button class="carousel-btn" id="prevBtn" onclick="moveCarousel(-1)">‹</button>
+                                <span class="carousel-counter" id="carouselCounter">1 / 14</span>
+                                <button class="carousel-btn" id="nextBtn" onclick="moveCarousel(1)">›</button>
+                            </div>
+                            <div class="carousel-indicators" id="carouselIndicators">
+                                <span class="carousel-dot active" onclick="goToSlide(0)"></span>
+                                <span class="carousel-dot" onclick="goToSlide(1)"></span>
+                                <span class="carousel-dot" onclick="goToSlide(2)"></span>
+                                <span class="carousel-dot" onclick="goToSlide(3)"></span>
+                            </div>
                         </div>
                     </div>
                 </div>
