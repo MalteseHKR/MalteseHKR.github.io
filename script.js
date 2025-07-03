@@ -41,58 +41,67 @@ document.querySelectorAll('.project-card').forEach(card => {
     });
 });
 
-// Dynamic typing effect for hero subtitle
-const subtitle = document.querySelector('.hero .subtitle');
-const originalText = subtitle.textContent;
-const typingTexts = [
-    'Crafting Digital Experiences That Matter',
-    'Building Tomorrow\'s Applications Today',
-    'Turning Ideas Into Reality',
-    'Creating Seamless User Experiences'
-];
+// Carousel functionality
+let currentSlide = 0;
+let imagesPerSlide = 8; // Number of images to show at once
+let totalImages = 14;
+let totalSlides = Math.ceil(totalImages / imagesPerSlide);
 
-let currentTextIndex = 0;
-let charIndex = 0;
-let isDeleting = false;
-
-function typeWriter() {
-    const currentText = typingTexts[currentTextIndex];
+function updateCarousel() {
+    const track = document.getElementById('carouselTrack');
+    const counter = document.getElementById('carouselCounter');
+    const indicators = document.querySelectorAll('.carousel-dot');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
     
-    if (isDeleting) {
-        subtitle.textContent = currentText.substring(0, charIndex - 1);
-        charIndex--;
-    } else {
-        subtitle.textContent = currentText.substring(0, charIndex + 1);
-        charIndex++;
-    }
+    if (!track) return;
     
-    if (!isDeleting && charIndex === currentText.length) {
-        setTimeout(() => isDeleting = true, 2000);
-    } else if (isDeleting && charIndex === 0) {
-        isDeleting = false;
-        currentTextIndex = (currentTextIndex + 1) % typingTexts.length;
-    }
+    // Calculate how many images can fit in the container
+    const containerWidth = track.parentElement.offsetWidth - 40; // Account for padding
+    const imageWidth = 35 + 8; // Image width + gap
+    imagesPerSlide = Math.floor(containerWidth / imageWidth);
+    totalSlides = Math.ceil(totalImages / imagesPerSlide);
     
-    const typingSpeed = isDeleting ? 50 : 100;
-    setTimeout(typeWriter, typingSpeed);
+    // Update transform
+    const translateX = -(currentSlide * imagesPerSlide * imageWidth);
+    track.style.transform = `translateX(${translateX}px)`;
+    
+    // Update counter
+    const startImage = currentSlide * imagesPerSlide + 1;
+    const endImage = Math.min((currentSlide + 1) * imagesPerSlide, totalImages);
+    counter.textContent = `${startImage}-${endImage} / ${totalImages}`;
+    
+    // Update indicators
+    indicators.forEach((dot, index) => {
+        dot.classList.toggle('active', index === currentSlide);
+    });
+    
+    // Update buttons
+    prevBtn.disabled = currentSlide === 0;
+    nextBtn.disabled = currentSlide === totalSlides - 1;
 }
 
-// Gallery toggle functionality
-function toggleGallery() {
-    const gallery = document.querySelector('.image-gallery');
-    const button = document.querySelector('.btn-gallery');
-    
-    if (gallery.classList.contains('gallery-expanded')) {
-        gallery.classList.remove('gallery-expanded');
-        button.textContent = 'View All Screenshots';
-    } else {
-        gallery.classList.add('gallery-expanded');
-        button.textContent = 'Show Less';
-    }
+function moveCarousel(direction) {
+    currentSlide += direction;
+    if (currentSlide < 0) currentSlide = 0;
+    if (currentSlide >= totalSlides) currentSlide = totalSlides - 1;
+    updateCarousel();
 }
 
-// Image modal functionality
+function goToSlide(slideIndex) {
+    currentSlide = slideIndex;
+    updateCarousel();
+}
+
+// Initialize carousel on page load
 document.addEventListener('DOMContentLoaded', function() {
+    // Update carousel on load
+    setTimeout(updateCarousel, 100);
+    
+    // Update carousel on window resize
+    window.addEventListener('resize', updateCarousel);
+    
+    // Image modal functionality
     const images = document.querySelectorAll('.project-image');
     
     images.forEach(img => {
@@ -100,7 +109,31 @@ document.addEventListener('DOMContentLoaded', function() {
             openImageModal(this.src, this.alt);
         });
     });
+    
+    // Auto-slide functionality (optional)
+    setInterval(() => {
+        if (currentSlide < totalSlides - 1) {
+            moveCarousel(1);
+        } else {
+            currentSlide = 0;
+            updateCarousel();
+        }
+    }, 5000); // Auto-slide every 5 seconds
 });
+
+// Gallery toggle functionality (keeping for backward compatibility)
+function toggleGallery() {
+    const gallery = document.querySelector('.image-gallery');
+    const button = document.querySelector('.btn-gallery');
+    
+    if (gallery && gallery.classList.contains('gallery-expanded')) {
+        gallery.classList.remove('gallery-expanded');
+        button.textContent = 'View All Screenshots';
+    } else if (gallery) {
+        gallery.classList.add('gallery-expanded');
+        button.textContent = 'Show Less';
+    }
+}
 
 function openImageModal(src, alt) {
     // Create modal if it doesn't exist
@@ -137,7 +170,7 @@ function openImageModal(src, alt) {
                 position: relative;
                 margin: 5% auto;
                 width: 90%;
-                max-width: 600px;
+                max-width: 400px;
                 text-align: center;
             }
             
@@ -192,7 +225,45 @@ function openImageModal(src, alt) {
     modal.style.display = 'block';
 }
 
-// Start typing effect after initial load
-setTimeout(() => {
-    typeWriter();
-}, 2000);
+// Dynamic typing effect for hero subtitle
+const subtitle = document.querySelector('.hero .subtitle');
+if (subtitle) {
+    const originalText = subtitle.textContent;
+    const typingTexts = [
+        'Crafting Digital Experiences That Matter',
+        'Building Tomorrow\'s Applications Today',
+        'Turning Ideas Into Reality',
+        'Creating Seamless User Experiences'
+    ];
+    
+    let currentTextIndex = 0;
+    let charIndex = 0;
+    let isDeleting = false;
+    
+    function typeWriter() {
+        const currentText = typingTexts[currentTextIndex];
+        
+        if (isDeleting) {
+            subtitle.textContent = currentText.substring(0, charIndex - 1);
+            charIndex--;
+        } else {
+            subtitle.textContent = currentText.substring(0, charIndex + 1);
+            charIndex++;
+        }
+        
+        if (!isDeleting && charIndex === currentText.length) {
+            setTimeout(() => isDeleting = true, 2000);
+        } else if (isDeleting && charIndex === 0) {
+            isDeleting = false;
+            currentTextIndex = (currentTextIndex + 1) % typingTexts.length;
+        }
+        
+        const typingSpeed = isDeleting ? 50 : 100;
+        setTimeout(typeWriter, typingSpeed);
+    }
+    
+    // Start typing effect after initial load
+    setTimeout(() => {
+        typeWriter();
+    }, 2000);
+}
