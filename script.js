@@ -127,20 +127,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 4000); // Auto-slide every 4 seconds
 });
 
-// Gallery toggle functionality (keeping for backward compatibility)
-function toggleGallery() {
-    const gallery = document.querySelector('.image-gallery');
-    const button = document.querySelector('.btn-gallery');
-    
-    if (gallery && gallery.classList.contains('gallery-expanded')) {
-        gallery.classList.remove('gallery-expanded');
-        button.textContent = 'View All Screenshots';
-    } else if (gallery) {
-        gallery.classList.add('gallery-expanded');
-        button.textContent = 'Show Less';
-    }
-}
-
 function openImageModal(src, alt) {
     // Create modal if it doesn't exist
     let modal = document.getElementById('imageModal');
