@@ -23,6 +23,43 @@
             font-size: 14px;
             line-height: 1.5;
             overflow-x: auto;
+            color: #e5e5e5;
+        }
+        .syntax-keyword { color: #569cd6; }
+        .syntax-string { color: #ce9178; }
+        .syntax-comment { color: #6a9955; }
+        .syntax-function { color: #dcdcaa; }
+        .agent-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .search-highlight {
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .model-indicator {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .analytics-chart {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        }
+        .progress-bar {
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
+            background-size: 200% 100%;
+            animation: gradient-flow 2s ease-in-out infinite;
+        }
+        @keyframes gradient-flow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        .neon-glow {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
         }
     </style>
 </head>
@@ -36,168 +73,937 @@
             BookOpen, Settings, Cpu, Database, Globe, Shield, Workflow, GitBranch, Terminal, FileCode, 
             Layers, Network, Bot, Lightbulb, Target, BarChart3, MessageCircle, Image, Mic, Video,
             CloudUpload, Download, Share, Bookmark, History, Palette, Sparkles, Rocket, Crown,
-            AlertTriangle, Info, CheckCircle
+            AlertTriangle, Info, CheckCircle, Play, Pause, RotateCcw, Activity, Eye, Wrench,
+            Monitor, Gauge, PieChart, LineChart, ArrowUp, ArrowDown, Percent, Menu, X, ThumbsUp, ThumbsDown
         } = lucide;
 
         const UltimateAIAssistant = () => {
-            // === PART 1: CORE STATE AND CONFIGURATION ===
-            
-            // Core State Management
+            // === CORE STATE MANAGEMENT ===
             const [messages, setMessages] = useState([]);
             const [input, setInput] = useState('');
             const [isLoading, setIsLoading] = useState(false);
-            const [isLearning, setIsLearning] = useState(false);
             const [isThinking, setIsThinking] = useState(false);
-            const [selectedModel, setSelectedModel] = useState('gpt-4-turbo');
-            const [workspaceMode, setWorkspaceMode] = useState('coding');
-            const [activeAgents, setActiveAgents] = useState([]);
+            const [isLearning, setIsLearning] = useState(false);
+            const [isProcessing, setIsProcessing] = useState(false);
+            
+            // === UI PANEL STATES ===
             const [showFilters, setShowFilters] = useState(false);
             const [showAgentPanel, setShowAgentPanel] = useState(false);
             const [showAnalytics, setShowAnalytics] = useState(false);
+            const [showCodePanel, setShowCodePanel] = useState(false);
+            const [workspaceMode, setWorkspaceMode] = useState('coding');
+            
+            // === MODEL AND AGENT STATES ===
+            const [selectedModel, setSelectedModel] = useState('gpt-4-turbo');
+            const [selectedModels, setSelectedModels] = useState(['gpt-4-turbo']);
+            const [activeAgents, setActiveAgents] = useState(['searchAgent']);
+            
+            // === RESULT STATES ===
             const [searchResults, setSearchResults] = useState([]);
             const [codeExecutionResults, setCodeExecutionResults] = useState([]);
+            const [agentLogs, setAgentLogs] = useState([]);
+            const [processingLogs, setProcessingLogs] = useState([]);
+            const [modelPerformance, setModelPerformance] = useState({});
+            
+            // === REFS ===
             const messagesEndRef = useRef(null);
 
-            // Configuration States
-            const [filters, setFilters] = useState({
-                language: '',
-                source: '',
-                recency: 'all',
-                difficulty: 'all',
-                aiModel: 'auto'
-            });
-
-            const [learningData, setLearningData] = useState({
-                userPatterns: {
-                    javascript: { frequency: 15, preferences: { api: 5, frontend: 8 }, frameworks: { react: 12 } },
-                    python: { frequency: 8, preferences: { backend: 4, ai: 3 }, frameworks: { fastapi: 5 } },
-                    typescript: { frequency: 10, preferences: { frontend: 7 }, frameworks: { react: 8 } }
+            // === AI MODELS CONFIGURATION ===
+            const [aiModels, setAiModels] = useState({
+                'gpt-4-turbo': { 
+                    name: 'GPT-4 Turbo', 
+                    strength: 'Reasoning & Code', 
+                    icon: '🧠', 
+                    active: true,
+                    processing: false,
+                    confidence: 0.92,
+                    speed: 0.85,
+                    cost: 0.03,
+                    specialty: ['coding', 'reasoning', 'analysis'],
+                    description: 'Advanced reasoning and code generation with superior problem-solving capabilities'
                 },
-                codeSnippets: {},
-                successfulSolutions: [
-                    { query: 'React component', language: 'javascript', timestamp: new Date() },
-                    { query: 'FastAPI backend', language: 'python', timestamp: new Date() }
-                ],
-                contextHistory: [],
-                personalizedSuggestions: [
-                    'Create a React component with TypeScript',
-                    'Build a FastAPI microservice',
-                    'Set up Docker configuration',
-                    'Generate comprehensive tests',
-                    'Optimize database queries'
-                ],
-                projectContext: {},
-                codebase: {},
-                performance: { accuracy: 95, speed: 98, satisfaction: 92 }
+                'claude-3-opus': { 
+                    name: 'Claude 3 Opus', 
+                    strength: 'Analysis & Writing', 
+                    icon: '📝', 
+                    active: false,
+                    processing: false,
+                    confidence: 0.89,
+                    speed: 0.78,
+                    cost: 0.025,
+                    specialty: ['writing', 'analysis', 'research'],
+                    description: 'Exceptional analytical writing and comprehensive research capabilities'
+                },
+                'gemini-ultra': { 
+                    name: 'Gemini Ultra', 
+                    strength: 'Multimodal & Research', 
+                    icon: '🔍', 
+                    active: false,
+                    processing: false,
+                    confidence: 0.87,
+                    speed: 0.82,
+                    cost: 0.02,
+                    specialty: ['research', 'multimodal', 'search'],
+                    description: 'Multimodal processing with advanced research and information synthesis'
+                },
+                'codex': { 
+                    name: 'GitHub Codex', 
+                    strength: 'Code Generation', 
+                    icon: '💻', 
+                    active: false,
+                    processing: false,
+                    confidence: 0.94,
+                    speed: 0.91,
+                    cost: 0.015,
+                    specialty: ['coding', 'debugging', 'optimization'],
+                    description: 'Specialized code generation with deep understanding of programming languages'
+                },
+                'dall-e-3': { 
+                    name: 'DALL-E 3', 
+                    strength: 'Image Generation', 
+                    icon: '🎨', 
+                    active: false,
+                    processing: false,
+                    confidence: 0.88,
+                    speed: 0.65,
+                    cost: 0.04,
+                    specialty: ['images', 'design', 'visual'],
+                    description: 'Advanced image generation with artistic coherence and creative vision'
+                },
+                'whisper': { 
+                    name: 'Whisper', 
+                    strength: 'Speech Recognition', 
+                    icon: '🎤', 
+                    active: false,
+                    processing: false,
+                    confidence: 0.96,
+                    speed: 0.89,
+                    cost: 0.006,
+                    specialty: ['audio', 'transcription', 'voice'],
+                    description: 'High-accuracy speech recognition and audio processing'
+                },
+                'local-llama': { 
+                    name: 'Local Llama 2', 
+                    strength: 'Privacy & Speed', 
+                    icon: '🦙', 
+                    active: false,
+                    processing: false,
+                    confidence: 0.82,
+                    speed: 0.95,
+                    cost: 0,
+                    specialty: ['privacy', 'local', 'fast'],
+                    description: 'Local processing for privacy-focused applications with fast response times'
+                }
             });
 
-            const [autoMode, setAutoMode] = useState({
-                codeGeneration: true,
-                testing: true,
-                optimization: true,
-                documentation: true,
-                deployment: false
-            });
-
-            const [connectedTools, setConnectedTools] = useState({
-                github: true,
-                docker: false,
-                aws: false,
-                vscode: true,
-                figma: false,
-                slack: false
-            });
-
-            // AI Models Configuration
-            const aiModels = {
-                'gpt-4-turbo': { name: 'GPT-4 Turbo', strength: 'Reasoning & Code', icon: '🧠' },
-                'claude-3-opus': { name: 'Claude 3 Opus', strength: 'Analysis & Writing', icon: '📝' },
-                'gemini-ultra': { name: 'Gemini Ultra', strength: 'Multimodal & Research', icon: '🔍' },
-                'codex': { name: 'GitHub Codex', strength: 'Code Generation', icon: '💻' },
-                'dall-e-3': { name: 'DALL-E 3', strength: 'Image Generation', icon: '🎨' },
-                'whisper': { name: 'Whisper', strength: 'Speech Recognition', icon: '🎤' },
-                'local-llama': { name: 'Local Llama 2', strength: 'Privacy & Speed', icon: '🦙' }
-            };
-
+            // === AUTONOMOUS AGENTS CONFIGURATION ===
             const [autonomousAgents, setAutonomousAgents] = useState({
                 codeReviewer: {
                     name: 'Code Reviewer',
-                    description: 'Automatically reviews code for best practices, security, and performance',
+                    description: 'Reviews code for best practices, security, and performance',
                     active: false,
-                    confidence: 0.89
+                    confidence: 0.89,
+                    status: 'idle',
+                    icon: Eye,
+                    color: 'blue',
+                    lastRun: null,
+                    totalRuns: 0
                 },
                 testGenerator: {
                     name: 'Test Generator',
                     description: 'Creates comprehensive test suites for your code',
                     active: false,
-                    confidence: 0.92
-                },
-                documentationBot: {
-                    name: 'Documentation Bot',
-                    description: 'Generates and maintains project documentation',
-                    active: false,
-                    confidence: 0.85
-                },
-                optimizationEngine: {
-                    name: 'Optimization Engine',
-                    description: 'Continuously optimizes code performance and resource usage',
-                    active: false,
-                    confidence: 0.88
+                    confidence: 0.92,
+                    status: 'idle',
+                    icon: CheckCircle,
+                    color: 'green',
+                    lastRun: null,
+                    totalRuns: 0
                 },
                 securityAnalyst: {
                     name: 'Security Analyst',
                     description: 'Scans for vulnerabilities and security issues',
                     active: false,
-                    confidence: 0.94
+                    confidence: 0.94,
+                    status: 'idle',
+                    icon: Shield,
+                    color: 'red',
+                    lastRun: null,
+                    totalRuns: 0
+                },
+                optimizationEngine: {
+                    name: 'Optimization Engine',
+                    description: 'Optimizes code performance and resource usage',
+                    active: false,
+                    confidence: 0.88,
+                    status: 'idle',
+                    icon: Zap,
+                    color: 'yellow',
+                    lastRun: null,
+                    totalRuns: 0
+                },
+                documentationBot: {
+                    name: 'Documentation Bot',
+                    description: 'Generates and maintains project documentation',
+                    active: false,
+                    confidence: 0.85,
+                    status: 'idle',
+                    icon: BookOpen,
+                    color: 'purple',
+                    lastRun: null,
+                    totalRuns: 0
                 },
                 deploymentManager: {
                     name: 'Deployment Manager',
                     description: 'Handles CI/CD, containerization, and cloud deployment',
                     active: false,
-                    confidence: 0.87
+                    confidence: 0.87,
+                    status: 'idle',
+                    icon: Rocket,
+                    color: 'orange',
+                    lastRun: null,
+                    totalRuns: 0
+                },
+                searchAgent: {
+                    name: 'Smart Search Agent',
+                    description: 'Performs intelligent web searches and analysis',
+                    active: true,
+                    confidence: 0.91,
+                    status: 'active',
+                    icon: Search,
+                    color: 'cyan',
+                    lastRun: null,
+                    totalRuns: 0
                 },
                 apiDesigner: {
                     name: 'API Designer',
                     description: 'Designs and generates RESTful APIs and GraphQL schemas',
                     active: false,
-                    confidence: 0.91
-                },
-                uiuxDesigner: {
-                    name: 'UI/UX Designer',
-                    description: 'Creates wireframes, mockups, and design systems',
-                    active: false,
-                    confidence: 0.86
+                    confidence: 0.91,
+                    status: 'idle',
+                    icon: Network,
+                    color: 'indigo',
+                    lastRun: null,
+                    totalRuns: 0
                 }
             });
 
+            // === WORKSPACE MODES ===
             const workspaceModes = {
-                coding: { icon: Code, color: 'bg-blue-600' },
-                research: { icon: Search, color: 'bg-green-600' },
-                design: { icon: Palette, color: 'bg-purple-600' },
-                deployment: { icon: Rocket, color: 'bg-red-600' },
-                analysis: { icon: BarChart3, color: 'bg-yellow-600' },
-                collaboration: { icon: MessageCircle, color: 'bg-pink-600' }
+                coding: { icon: Code, color: 'bg-blue-600', label: 'Coding' },
+                research: { icon: Search, color: 'bg-green-600', label: 'Research' },
+                design: { icon: Palette, color: 'bg-purple-600', label: 'Design' },
+                deployment: { icon: Rocket, color: 'bg-red-600', label: 'Deployment' },
+                analysis: { icon: BarChart3, color: 'bg-yellow-600', label: 'Analysis' },
+                collaboration: { icon: MessageCircle, color: 'bg-pink-600', label: 'Collaboration' },
+                testing: { icon: CheckCircle, color: 'bg-teal-600', label: 'Testing' },
+                security: { icon: Shield, color: 'bg-orange-600', label: 'Security' }
             };
+// === AUTO MODE CONFIGURATION ===
+            const [autoMode, setAutoMode] = useState({
+                codeGeneration: true,
+                testing: true,
+                optimization: true,
+                documentation: true,
+                deployment: false,
+                security: true,
+                search: true,
+                multiModel: true
+            });
 
-            // === PART 2: AI PROCESSING AND CODE GENERATION ===
+            // === SEARCH FILTERS ===
+            const [filters, setFilters] = useState({
+                language: '',
+                framework: '',
+                source: '',
+                recency: 'all',
+                difficulty: 'all',
+                aiModel: 'auto',
+                includeCode: true,
+                includeDocumentation: true,
+                includeExamples: true
+            });
 
-            // Enhanced Language Detection
+            // === LEARNING DATA AND ANALYTICS ===
+            const [learningData, setLearningData] = useState({
+                userPatterns: {
+                    javascript: { frequency: 15, preferences: { api: 5, frontend: 8 }, frameworks: { react: 12, vue: 3, angular: 2 } },
+                    python: { frequency: 8, preferences: { backend: 4, ai: 3, data: 1 }, frameworks: { fastapi: 5, django: 2, flask: 1 } },
+                    typescript: { frequency: 10, preferences: { frontend: 7, fullstack: 3 }, frameworks: { react: 8, next: 4, nest: 2 } },
+                    rust: { frequency: 3, preferences: { systems: 2, performance: 1 }, frameworks: { actix: 1, warp: 1 } },
+                    go: { frequency: 5, preferences: { backend: 3, microservices: 2 }, frameworks: { gin: 2, fiber: 1 } }
+                },
+                codeSnippets: {},
+                successfulSolutions: [
+                    { query: 'React component with hooks', language: 'javascript', timestamp: new Date(), rating: 5 },
+                    { query: 'FastAPI backend with auth', language: 'python', timestamp: new Date(), rating: 4 },
+                    { query: 'TypeScript interface design', language: 'typescript', timestamp: new Date(), rating: 5 }
+                ],
+                contextHistory: [],
+                personalizedSuggestions: [
+                    'Create a React component with TypeScript and tests',
+                    'Build a FastAPI microservice with Docker deployment',
+                    'Set up Next.js application with authentication',
+                    'Generate comprehensive API documentation',
+                    'Optimize React application for performance',
+                    'Create secure authentication system',
+                    'Build responsive UI component library',
+                    'Set up CI/CD pipeline with testing'
+                ],
+                projectContext: {
+                    currentProjects: ['E-commerce Platform', 'AI Dashboard', 'Mobile App API'],
+                    technologies: ['React', 'TypeScript', 'Python', 'FastAPI', 'PostgreSQL', 'Docker'],
+                    teamSize: 'medium',
+                    experienceLevel: 'advanced'
+                },
+                performance: { 
+                    accuracy: 95.2, 
+                    speed: 98.1, 
+                    satisfaction: 92.7,
+                    efficiency: 89.4
+                }
+            });
+
+            // === ANALYTICS DATA ===
+            const [analyticsData, setAnalyticsData] = useState({
+                totalQueries: 247,
+                successRate: 94.6,
+                avgResponseTime: 2.1,
+                totalProcessingTime: 1247.3,
+                modelUsage: {
+                    'gpt-4-turbo': 89,
+                    'claude-3-opus': 43,
+                    'codex': 67,
+                    'gemini-ultra': 28,
+                    'dall-e-3': 15,
+                    'whisper': 12,
+                    'local-llama': 8
+                },
+                agentUsage: {
+                    'searchAgent': 156,
+                    'codeReviewer': 45,
+                    'testGenerator': 38,
+                    'securityAnalyst': 23,
+                    'optimizationEngine': 31,
+                    'documentationBot': 19
+                },
+                userSatisfaction: 4.8,
+                costEfficiency: 91.2,
+                performanceMetrics: {
+                    accuracy: 94.8,
+                    speed: 89.3,
+                    reliability: 96.1,
+                    innovation: 91.7,
+                    userExperience: 93.2
+                },
+                weeklyStats: [
+                    { day: 'Mon', queries: 42, success: 96, avgTime: 2.3 },
+                    { day: 'Tue', queries: 38, success: 94, avgTime: 2.0 },
+                    { day: 'Wed', queries: 45, success: 92, avgTime: 2.4 },
+                    { day: 'Thu', queries: 41, success: 95, avgTime: 1.9 },
+                    { day: 'Fri', queries: 47, success: 97, avgTime: 2.1 },
+                    { day: 'Sat', queries: 23, success: 91, avgTime: 2.8 },
+                    { day: 'Sun', queries: 18, success: 93, avgTime: 2.5 }
+                ],
+                topQueries: [
+                    { query: 'React component generation', count: 23 },
+                    { query: 'API design patterns', count: 18 },
+                    { query: 'Code optimization', count: 15 },
+                    { query: 'TypeScript interfaces', count: 12 },
+                    { query: 'Testing strategies', count: 11 }
+                ]
+            });
+
+            // === CONNECTED TOOLS ===
+            const [connectedTools, setConnectedTools] = useState({
+                github: { connected: true, status: 'active', lastSync: new Date() },
+                docker: { connected: false, status: 'inactive', lastSync: null },
+                aws: { connected: false, status: 'inactive', lastSync: null },
+                vscode: { connected: true, status: 'active', lastSync: new Date() },
+                figma: { connected: false, status: 'inactive', lastSync: null },
+                slack: { connected: true, status: 'active', lastSync: new Date() },
+                jira: { connected: false, status: 'inactive', lastSync: null },
+                notion: { connected: true, status: 'active', lastSync: new Date() }
+            });
+
+            // === CODE TEMPLATES ===
+            const codeTemplates = {
+                react: {
+                    component: `import React, { useState, useEffect, useCallback, useMemo } from 'react';
+
+interface Props {
+  title: string;
+  data: any[];
+  onItemClick?: (item: any) => void;
+  onItemSelect?: (items: any[]) => void;
+  loading?: boolean;
+  className?: string;
+  enableSearch?: boolean;
+  enableSort?: boolean;
+  enableMultiSelect?: boolean;
+  pageSize?: number;
+}
+
+interface SortConfig {
+  key: string;
+  direction: 'asc' | 'desc';
+}
+
+const GeneratedComponent: React.FC<Props> = ({ 
+  title, 
+  data, 
+  onItemClick, 
+  onItemSelect,
+  loading = false,
+  className = '',
+  enableSearch = true,
+  enableSort = true,
+  enableMultiSelect = false,
+  pageSize = 10
+}) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+  const [selectedItems, setSelectedItems] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Memoized search and sort functionality
+  const processedData = useMemo(() => {
+    let result = [...data];
+
+    // Apply search filter
+    if (searchTerm && enableSearch) {
+      result = result.filter(item => 
+        JSON.stringify(item).toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Apply sorting
+    if (sortConfig && enableSort) {
+      result.sort((a, b) => {
+        const aValue = a[sortConfig.key];
+        const bValue = b[sortConfig.key];
+        
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [data, searchTerm, sortConfig, enableSearch, enableSort]);
+
+  // Pagination
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return processedData.slice(startIndex, startIndex + pageSize);
+  }, [processedData, currentPage, pageSize]);
+
+  const totalPages = Math.ceil(processedData.length / pageSize);
+
+  const handleItemClick = useCallback((item: any) => {
+    if (enableMultiSelect) {
+      const newSelected = selectedItems.includes(item)
+        ? selectedItems.filter(selected => selected !== item)
+        : [...selectedItems, item];
+      
+      setSelectedItems(newSelected);
+      onItemSelect?.(newSelected);
+    }
+    
+    onItemClick?.(item);
+  }, [onItemClick, onItemSelect, selectedItems, enableMultiSelect]);
+
+  if (loading) {
+    return (
+      <div className={\`flex justify-center items-center p-8 \${className}\`}>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <span className="ml-2 text-gray-600">Loading...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className={\`p-6 bg-white rounded-lg shadow-md \${className}\`}>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold">{title}</h2>
+        {enableMultiSelect && selectedItems.length > 0 && (
+          <div className="text-sm text-gray-600">
+            {selectedItems.length} item(s) selected
+          </div>
+        )}
+      </div>
+      
+      {enableSearch && (
+        <div className="mb-4">
+          <input
+            type="text"
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      )}
+
+      <div className="space-y-2">
+        {paginatedData.length === 0 ? (
+          <p className="text-center text-gray-500 py-8">No items found</p>
+        ) : (
+          paginatedData.map((item, index) => (
+            <div
+              key={index}
+              onClick={() => handleItemClick(item)}
+              className={\`p-4 border rounded-lg cursor-pointer transition-colors hover:bg-gray-50 \${
+                selectedItems.includes(item) ? 'bg-blue-50 border-blue-300' : 'border-gray-200'
+              }\`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  {Object.entries(item).map(([key, value]) => (
+                    <div key={key} className="text-sm">
+                      <span className="font-medium capitalize">{key}:</span> {String(value)}
+                    </div>
+                  ))}
+                </div>
+                {enableMultiSelect && (
+                  <input
+                    type="checkbox"
+                    checked={selectedItems.includes(item)}
+                    onChange={() => handleItemClick(item)}
+                    className="ml-2"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+      
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between">
+          <div className="text-sm text-gray-600">
+            Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, processedData.length)} of {processedData.length} items
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+            >
+              Previous
+            </button>
+            <span className="text-sm text-gray-600">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default GeneratedComponent;`,
+
+                    hook: `import { useState, useEffect, useCallback, useRef } from 'react';
+
+interface UseApiOptions {
+  url: string;
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  headers?: Record<string, string>;
+  autoFetch?: boolean;
+  retries?: number;
+  timeout?: number;
+  cacheTime?: number;
+  retryDelay?: number;
+}
+
+interface ApiState<T> {
+  data: T | null;
+  loading: boolean;
+  error: string | null;
+  status: number | null;
+  lastFetch: Date | null;
+}
+
+export const useApi = <T = any>(options: UseApiOptions) => {
+  const [state, setState] = useState<ApiState<T>>({
+    data: null,
+    loading: false,
+    error: null,
+    status: null,
+    lastFetch: null,
+  });
+
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const retryCountRef = useRef(0);
+
+  const fetchData = useCallback(async (body?: any, customOptions?: Partial<UseApiOptions>) => {
+    const mergedOptions = { ...options, ...customOptions };
+    
+    // Cancel previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    abortControllerRef.current = new AbortController();
+    setState(prev => ({ ...prev, loading: true, error: null }));
+    
+    try {
+      const response = await fetch(mergedOptions.url, {
+        method: mergedOptions.method || 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...mergedOptions.headers,
+        },
+        body: body ? JSON.stringify(body) : undefined,
+        signal: abortControllerRef.current.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(\`HTTP error! status: \${response.status}\`);
+      }
+
+      const data = await response.json();
+      
+      setState({ 
+        data, 
+        loading: false, 
+        error: null, 
+        status: response.status,
+        lastFetch: new Date(),
+      });
+      
+      retryCountRef.current = 0;
+      return data;
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        error: errorMessage,
+        status: null
+      }));
+      
+      throw error;
+    }
+  }, [options]);
+
+  // Auto-fetch on mount for GET requests
+  useEffect(() => {
+    if (options.autoFetch !== false && (options.method === 'GET' || !options.method)) {
+      fetchData();
+    }
+    
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchData, options.autoFetch, options.method]);
+
+  const refetch = useCallback((customOptions?: Partial<UseApiOptions>) => {
+    retryCountRef.current = 0;
+    return fetchData(undefined, customOptions);
+  }, [fetchData]);
+
+  const mutate = useCallback((body: any, customOptions?: Partial<UseApiOptions>) => {
+    retryCountRef.current = 0;
+    return fetchData(body, { method: 'POST', ...customOptions });
+  }, [fetchData]);
+
+  return { 
+    ...state, 
+    refetch, 
+    mutate,
+    isLoading: state.loading,
+    isError: !!state.error,
+    isSuccess: !state.loading && !state.error && state.data !== null,
+  };
+};`
+                },
+
+                python: {
+                    fastapi: `from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field, validator
+from typing import Optional, List
+from datetime import datetime, timedelta
+import jwt
+import bcrypt
+
+app = FastAPI(title="Generated API", version="1.0.0")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Security
+security = HTTPBearer()
+SECRET_KEY = "your-secret-key-change-in-production"
+ALGORITHM = "HS256"
+
+# Models
+class UserBase(BaseModel):
+    email: str = Field(..., regex=r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$')
+    username: str = Field(..., min_length=3, max_length=50)
+    full_name: Optional[str] = None
+
+class UserCreate(UserBase):
+    password: str = Field(..., min_length=8)
+
+class User(UserBase):
+    id: int
+    is_active: bool = True
+    created_at: datetime
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+# Utility functions
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=30)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+# Routes
+@app.get("/")
+async def root():
+    return {"message": "FastAPI is running!", "timestamp": datetime.utcnow()}
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "timestamp": datetime.utcnow()}
+
+@app.post("/auth/register", response_model=dict)
+async def register(user: UserCreate):
+    # In production, save to database
+    hashed_password = hash_password(user.password)
+    return {
+        "message": "User created successfully",
+        "user": {"username": user.username, "email": user.email}
+    }
+
+@app.post("/auth/login", response_model=Token)
+async def login(username: str, password: str):
+    # In production, validate against database
+    if username == "admin" and password == "password":
+        access_token = create_access_token(data={"sub": username})
+        return {"access_token": access_token, "token_type": "bearer"}
+    raise HTTPException(status_code=401, detail="Invalid credentials")
+
+@app.get("/users/me")
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    # In production, decode JWT and get user from database
+    return {"username": "current_user", "email": "user@example.com"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)`,
+
+                    dataclass: `from dataclasses import dataclass, field
+from typing import List, Dict, Optional, Any
+from datetime import datetime
+from enum import Enum
+import json
+import uuid
+
+class UserRole(Enum):
+    ADMIN = "admin"
+    USER = "user"
+    MODERATOR = "moderator"
+
+class Status(Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    PENDING = "pending"
+
+@dataclass
+class BaseModel:
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    created_at: datetime = field(default_factory=datetime.utcnow)
+    updated_at: datetime = field(default_factory=datetime.utcnow)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary"""
+        result = {}
+        for key, value in self.__dict__.items():
+            if isinstance(value, datetime):
+                result[key] = value.isoformat()
+            elif isinstance(value, Enum):
+                result[key] = value.value
+            elif hasattr(value, 'to_dict'):
+                result[key] = value.to_dict()
+            else:
+                result[key] = value
+        return result
+    
+    def to_json(self) -> str:
+        """Convert to JSON string"""
+        return json.dumps(self.to_dict(), indent=2)
+
+@dataclass
+class User(BaseModel):
+    username: str
+    email: str
+    full_name: Optional[str] = None
+    role: UserRole = UserRole.USER
+    status: Status = Status.PENDING
+    tags: List[str] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    last_login: Optional[datetime] = None
+    
+    def __post_init__(self):
+        self.validate()
+    
+    def validate(self):
+        """Validate user data"""
+        if len(self.username) < 3:
+            raise ValueError("Username must be at least 3 characters")
+        if "@" not in self.email:
+            raise ValueError("Invalid email format")
+    
+    @property
+    def display_name(self) -> str:
+        return self.full_name or self.username
+    
+    @property
+    def is_active(self) -> bool:
+        return self.status == Status.ACTIVE
+    
+    def activate(self):
+        """Activate user"""
+        self.status = Status.ACTIVE
+        self.updated_at = datetime.utcnow()
+    
+    def add_tag(self, tag: str):
+        """Add tag to user"""
+        if tag not in self.tags:
+            self.tags.append(tag)
+            self.updated_at = datetime.utcnow()`
+                },
+
+                javascript: {
+                    express: `const express = require('express');
+const helmet = require('helmet');
+const cors = require('cors');
+const rateLimit = require('express-rate-limit');
+const { body, validationResult } = require('express-validator');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+// Security middleware
+app.use(helmet());
+app.use(cors());
+app.use(express.json());
+
+// Rate limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100
+});
+app.use(limiter);
+
+// Mock database
+const users = [];
+
+// Utility functions
+const hashPassword = async (password) => {
+    return await bcrypt.hash(password, 12);
+};
+
+const generateToken = (userId) => {
+    return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '24h' });
+};
+
+// Routes
+app.get('/', (req, res) => {
+    res.json({ message: 'Express API is running!' });
+});
+
+app.post('/auth/register', [
+    body('email').isEmail(),
+    body('password').isLength({ min: 8 }),
+    body('username').isLength({ min: 3 })
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email, password, username } = req.body;
+    const hashedPassword = await hashPassword(password);
+    
+    const user = {
+        id: Date.now(),
+        email,
+        username,
+        password: hashedPassword,
+        createdAt: new Date()
+    };
+    
+    users.push(user);
+    res.status(201).json({ message: 'User created', userId: user.id });
+});
+
+app.listen(PORT, () => {
+    console.log(\`Server running on port \${PORT}\`);
+});`
+                }
+            };
+// === UTILITY FUNCTIONS ===
+            
+            // Language and Framework Detection
             const detectLanguage = (query) => {
                 const langKeywords = {
-                    javascript: ['js', 'javascript', 'node', 'npm', 'yarn', 'webpack', 'babel'],
-                    typescript: ['typescript', 'ts', 'interface', 'type', 'generic'],
-                    python: ['python', 'py', 'pip', 'conda', 'django', 'flask', 'fastapi'],
-                    java: ['java', 'spring', 'maven', 'gradle', 'hibernate'],
+                    javascript: ['js', 'javascript', 'node', 'npm', 'yarn', 'webpack', 'babel', 'react', 'vue', 'angular'],
+                    typescript: ['typescript', 'ts', 'interface', 'type', 'generic', 'enum'],
+                    python: ['python', 'py', 'pip', 'conda', 'django', 'flask', 'fastapi', 'pandas', 'numpy'],
+                    java: ['java', 'spring', 'maven', 'gradle', 'hibernate', 'jvm'],
                     cpp: ['c++', 'cpp', 'std::', 'iostream', 'vector', 'template'],
-                    rust: ['rust', 'cargo', 'fn', 'mut', 'impl', 'trait'],
-                    go: ['golang', 'go', 'func', 'package', 'import'],
+                    rust: ['rust', 'cargo', 'fn', 'mut', 'impl', 'trait', 'struct'],
+                    go: ['golang', 'go', 'func', 'package', 'import', 'goroutine'],
                     php: ['php', 'laravel', 'symfony', 'composer'],
                     ruby: ['ruby', 'rails', 'gem', 'bundle'],
                     swift: ['swift', 'ios', 'xcode', 'cocoapods'],
                     kotlin: ['kotlin', 'android', 'gradle'],
-                    csharp: ['c#', 'csharp', '.net', 'nuget', 'asp.net']
+                    csharp: ['c#', 'csharp', '.net', 'nuget', 'asp.net'],
+                    sql: ['sql', 'mysql', 'postgresql', 'sqlite', 'database', 'query'],
+                    html: ['html', 'css', 'scss', 'sass', 'tailwind'],
+                    shell: ['bash', 'shell', 'zsh', 'terminal', 'cli', 'script']
                 };
-                
+
                 const queryLower = query.toLowerCase();
                 for (const [lang, keywords] of Object.entries(langKeywords)) {
                     if (keywords.some(keyword => queryLower.includes(keyword))) {
@@ -216,13 +1022,15 @@
                     nextjs: ['next.js', 'nextjs', 'pages', 'api routes'],
                     nuxtjs: ['nuxt', 'nuxtjs', 'pages', 'plugins'],
                     express: ['express', 'middleware', 'router'],
-                    fastify: ['fastify', 'hooks', 'plugins'],
+                    fastapi: ['fastapi', 'pydantic', 'async def'],
                     django: ['django', 'models', 'views', 'urls'],
                     flask: ['flask', 'app.route', 'blueprint'],
                     spring: ['spring', 'boot', 'mvc', 'data'],
-                    laravel: ['laravel', 'eloquent', 'artisan']
+                    laravel: ['laravel', 'eloquent', 'artisan'],
+                    rails: ['rails', 'activerecord', 'mvc'],
+                    dotnet: ['.net', 'asp.net', 'core', 'mvc']
                 };
-                
+
                 const queryLower = query.toLowerCase();
                 for (const [framework, keywords] of Object.entries(frameworks)) {
                     if (keywords.some(keyword => queryLower.includes(keyword))) {
@@ -234,1595 +1042,10 @@
 
             const detectProblemType = (query) => {
                 const problemTypes = {
-                    'algorithm': ['sort', 'search', 'algorithm', 'optimize', 'performance'],
-                    'debug': ['error', 'bug', 'debug', 'fix', 'not working', 'issue'],
-                    'api': ['api', 'fetch', 'request', 'endpoint', 'rest', 'graphql'],
-                    'database': ['database', 'sql', 'query', 'table', 'schema'],
-                    'frontend': ['ui', 'interface', 'styling', 'css', 'html', 'component'],
+                    'algorithm': ['sort', 'search', 'algorithm', 'optimize', 'performance', 'complexity'],
+                    'debug': ['error', 'bug', 'debug', 'fix', 'not working', 'issue', 'problem'],
+                    'api': ['api', 'fetch', 'request', 'endpoint', 'rest', 'graphql', 'webhook'],
+                    'database': ['database', 'sql', 'query', 'table', 'schema', 'migration'],
+                    'frontend': ['ui', 'interface', 'styling', 'css', 'html', 'component', 'responsive'],
                     'backend': ['server', 'backend', 'middleware', 'authentication', 'security'],
-                    'testing': ['test', 'unit test', 'integration', 'mock', 'jest', 'pytest'],
-                    'deployment': ['deploy', 'docker', 'kubernetes', 'cloud', 'production'],
-                    'mobile': ['mobile', 'ios', 'android', 'react native', 'flutter'],
-                    'ai': ['ai', 'machine learning', 'neural network', 'model', 'training']
-                };
-                
-                const queryLower = query.toLowerCase();
-                for (const [type, keywords] of Object.entries(problemTypes)) {
-                    if (keywords.some(keyword => queryLower.includes(keyword))) {
-                        return type;
-                    }
-                }
-                return 'general';
-            };
-
-            const detectArchitecture = (query) => {
-                const architectures = {
-                    microservices: ['microservice', 'micro service', 'distributed', 'service mesh'],
-                    serverless: ['serverless', 'lambda', 'functions', 'faas'],
-                    fullstack: ['full stack', 'fullstack', 'end to end', 'complete app'],
-                    mobile: ['mobile', 'ios', 'android', 'react native', 'flutter'],
-                    desktop: ['desktop', 'electron', 'tauri', 'native'],
-                    cli: ['cli', 'command line', 'terminal', 'console'],
-                    api: ['api', 'rest', 'graphql', 'backend', 'server'],
-                    frontend: ['frontend', 'ui', 'interface', 'client'],
-                    database: ['database', 'db', 'schema', 'migration']
-                };
-                
-                const queryLower = query.toLowerCase();
-                for (const [arch, keywords] of Object.entries(architectures)) {
-                    if (keywords.some(keyword => queryLower.includes(keyword))) {
-                        return arch;
-                    }
-                }
-                return 'fullstack';
-            };
-
-            // User Intent Analysis
-            const analyzeUserIntent = (query) => {
-                const intents = {
-                    codeGeneration: /create|build|generate|make|develop|implement/i.test(query),
-                    debugging: /debug|fix|error|issue|problem|bug/i.test(query),
-                    optimization: /optimize|improve|performance|faster|efficient/i.test(query),
-                    learning: /explain|teach|how|what|why|learn/i.test(query),
-                    deployment: /deploy|docker|kubernetes|cloud|aws|production/i.test(query),
-                    testing: /test|unit test|integration|mock|jest/i.test(query),
-                    security: /security|vulnerability|auth|encrypt|secure/i.test(query),
-                    api: /api|endpoint|rest|graphql|fetch|request/i.test(query),
-                    database: /database|sql|query|schema|migration/i.test(query),
-                    frontend: /ui|interface|component|react|vue|angular/i.test(query),
-                    mobile: /mobile|ios|android|react native|flutter/i.test(query),
-                    ai: /ai|machine learning|neural network|model|training/i.test(query)
-                };
-                
-                const detectedIntents = Object.entries(intents)
-                    .filter(([_, regex]) => regex)
-                    .map(([intent, _]) => intent);
-                
-                return {
-                    primary: detectedIntents[0] || 'general',
-                    secondary: detectedIntents.slice(1),
-                    includesCode: /function|class|component|const|let|var|def|import/i.test(query),
-                    complexity: assessQueryComplexity(query).level
-                };
-            };
-
-            const assessQueryComplexity = (query) => {
-                const complexityIndicators = {
-                    simple: /simple|basic|quick|easy/i,
-                    medium: /complex|advanced|comprehensive|detailed/i,
-                    high: /enterprise|production|scalable|microservice|architecture/i,
-                    expert: /ultimate|sophisticated|cutting-edge|state-of-the-art/i
-                };
-                
-                for (const [level, regex] of Object.entries(complexityIndicators)) {
-                    if (regex.test(query)) {
-                        return { 
-                            level, 
-                            requiresCode: level !== 'simple',
-                            requiresMultipleModels: ['high', 'expert'].includes(level),
-                            requiresAgents: ['medium', 'high', 'expert'].includes(level)
-                        };
-                    }
-                }
-                
-                return { level: 'medium', requiresCode: true, requiresMultipleModels: false, requiresAgents: true };
-            };
-
-            // Advanced Code Generation
-            const advancedCodeGeneration = async (context, userIntent) => {
-                const language = detectLanguage(context);
-                const framework = detectFramework(context);
-                const architecture = detectArchitecture(context);
-                const userPatterns = learningData.userPatterns[language] || {};
-                
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                const codeTemplates = {
-                    fullstack: {
-                        template: `// Auto-generated Full-Stack Application
-// Frontend (React + TypeScript)
-import React, { useState, useEffect } from 'react';
-import { ApolloClient, InMemoryCache, gql, useQuery, useMutation } from '@apollo/client';
-
-// GraphQL Client Setup
-const client = new ApolloClient({
-  uri: process.env.REACT_APP_GRAPHQL_ENDPOINT || 'http://localhost:4000/graphql',
-  cache: new InMemoryCache(),
-  headers: {
-    authorization: localStorage.getItem('token') ? \`Bearer \${localStorage.getItem('token')}\` : '',
-  }
-});
-
-// Type Definitions
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: UserRole;
-  createdAt: string;
-}
-
-enum UserRole {
-  ADMIN = 'ADMIN',
-  USER = 'USER',
-  MODERATOR = 'MODERATOR'
-}
-
-// GraphQL Queries & Mutations
-const GET_USERS = gql\`
-  query GetUsers($filter: UserFilter, $pagination: PaginationInput) {
-    users(filter: $filter, pagination: $pagination) {
-      data {
-        id
-        email
-        name
-        role
-        createdAt
-      }
-      pagination {
-        total
-        page
-        limit
-        hasNext
-        hasPrev
-      }
-    }
-  }
-\`;
-
-// Advanced React Component
-const UserManagement: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRole, setSelectedRole] = useState<UserRole | 'ALL'>('ALL');
-  const [currentPage, setCurrentPage] = useState(1);
-  
-  const { data, loading, error, refetch } = useQuery(GET_USERS, {
-    variables: {
-      filter: {
-        search: searchTerm,
-        role: selectedRole !== 'ALL' ? selectedRole : undefined
-      },
-      pagination: { page: currentPage, limit: 10 }
-    },
-    fetchPolicy: 'cache-and-network'
-  });
-
-  return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">User Management</h1>
-      {/* Component implementation */}
-    </div>
-  );
-};
-
-// Backend (Node.js + GraphQL + TypeScript)
-import { ApolloServer } from 'apollo-server-express';
-import { buildSchema } from 'type-graphql';
-import express from 'express';
-
-@Resolver(User)
-export class UserResolver {
-  @Query(() => PaginatedUserResponse)
-  async users(
-    @Arg('filter', { nullable: true }) filter?: UserFilter,
-    @Arg('pagination', { nullable: true }) pagination?: PaginationInput
-  ): Promise<PaginatedUserResponse> {
-    // Implementation here
-    return { data: [], pagination: { total: 0, page: 1, limit: 10, hasNext: false, hasPrev: false } };
-  }
-}`,
-                        explanation: "Complete full-stack application with React/TypeScript frontend, GraphQL API, and advanced features.",
-                        confidence: 0.95,
-                        isAutoGenerated: true,
-                        aiModel: 'gpt-4-turbo',
-                        generatedBy: ['codeGenerator', 'architectureDesigner']
-                    },
-                    microservices: {
-                        template: `// Auto-generated Microservices Architecture
-// API Gateway (Express.js)
-import express from 'express';
-import httpProxy from 'http-proxy-middleware';
-import rateLimit from 'express-rate-limit';
-
-class APIGateway {
-  private app: express.Application;
-  
-  constructor() {
-    this.app = express();
-    this.setupMiddleware();
-    this.setupRoutes();
-  }
-
-  private setupMiddleware() {
-    // Rate limiting
-    const limiter = rateLimit({
-      windowMs: 15 * 60 * 1000,
-      max: 1000
-    });
-    this.app.use(limiter);
-  }
-
-  private setupRoutes() {
-    // User Service
-    this.app.use('/api/users', httpProxy({
-      target: 'http://user-service:3001',
-      changeOrigin: true,
-      pathRewrite: { '^/api/users': '' }
-    }));
-
-    // Product Service
-    this.app.use('/api/products', httpProxy({
-      target: 'http://product-service:3002',
-      changeOrigin: true,
-      pathRewrite: { '^/api/products': '' }
-    }));
-  }
-}
-
-// User Microservice
-export class UserService {
-  async getUsers() {
-    // Implementation
-  }
-
-  async createUser(userData: any) {
-    // Implementation
-  }
-}
-
-// Docker Compose
-version: '3.8'
-services:
-  api-gateway:
-    build: ./api-gateway
-    ports:
-      - "3000:3000"
-  
-  user-service:
-    build: ./user-service
-    ports:
-      - "3001:3001"
-    environment:
-      - DATABASE_URL=postgresql://user:password@postgres:5432/userdb`,
-                        explanation: "Complete microservices architecture with API gateway and service orchestration.",
-                        confidence: 0.93,
-                        isAutoGenerated: true,
-                        aiModel: 'claude-3-opus',
-                        generatedBy: ['architectureDesigner', 'deploymentManager']
-                    }
-                };
-
-                return codeTemplates[architecture] || codeTemplates.fullstack;
-            };
-
-            // === PART 3: AUTONOMOUS AGENTS AND SMART SEARCH ===
-
-            // Autonomous Agent System
-            const runAutonomousAgents = async (codeContent, userIntent) => {
-                const agentResults = {};
-                
-                for (const agentKey of activeAgents) {
-                    switch (agentKey) {
-                        case 'codeReviewer':
-                            agentResults.codeReview = await simulateCodeReview(codeContent);
-                            break;
-                        case 'testGenerator':
-                            agentResults.tests = await simulateTestGeneration(codeContent);
-                            break;
-                        case 'securityAnalyst':
-                            agentResults.security = await simulateSecurityScan(codeContent);
-                            break;
-                        case 'optimizationEngine':
-                            agentResults.optimization = await simulateOptimization(codeContent);
-                            break;
-                        case 'documentationBot':
-                            agentResults.documentation = await simulateDocumentationGeneration(codeContent);
-                            break;
-                        case 'deploymentManager':
-                            agentResults.deployment = await simulateDeploymentConfig(codeContent);
-                            break;
-                    }
-                }
-                
-                return agentResults;
-            };
-
-            // Code Review Agent
-            const simulateCodeReview = async (code) => {
-                await new Promise(resolve => setTimeout(resolve, 1200));
-                
-                const issues = [
-                    { 
-                        type: 'warning', 
-                        message: 'Consider using TypeScript for better type safety', 
-                        line: 1, 
-                        severity: 'medium',
-                        suggestion: 'Add type annotations to function parameters'
-                    },
-                    { 
-                        type: 'info', 
-                        message: 'Add error handling for async operations', 
-                        line: 15, 
-                        severity: 'high',
-                        suggestion: 'Wrap async calls in try-catch blocks'
-                    }
-                ];
-                
-                return {
-                    score: 8.5,
-                    grade: 'B+',
-                    issues,
-                    suggestions: [
-                        'Add JSDoc comments for better documentation',
-                        'Consider implementing input validation',
-                        'Use consistent naming conventions'
-                    ],
-                    metrics: {
-                        complexity: 'Medium',
-                        maintainability: 85,
-                        readability: 90,
-                        testCoverage: 65
-                    }
-                };
-            };
-
-            // Test Generation Agent
-            const simulateTestGeneration = async (code) => {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                const testCode = `// Auto-generated comprehensive test suite
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { jest } from '@jest/globals';
-import userEvent from '@testing-library/user-event';
-
-describe('Generated Component Tests', () => {
-  let mockProps;
-  
-  beforeEach(() => {
-    mockProps = {
-      onSubmit: jest.fn(),
-      data: { id: 1, name: 'Test User' },
-      loading: false
-    };
-  });
-
-  describe('Rendering Tests', () => {
-    test('should render correctly with default props', () => {
-      render(<Component {...mockProps} />);
-      expect(screen.getByText('Test User')).toBeInTheDocument();
-    });
-  });
-
-  describe('User Interaction Tests', () => {
-    test('should handle form submission', async () => {
-      const user = userEvent.setup();
-      render(<Component {...mockProps} />);
-      
-      const submitButton = screen.getByRole('button', { name: /submit/i });
-      await user.click(submitButton);
-      
-      expect(mockProps.onSubmit).toHaveBeenCalledWith(mockProps.data);
-    });
-  });
-});`;
-
-                return {
-                    coverage: 92,
-                    testsGenerated: 15,
-                    testTypes: ['unit', 'integration', 'e2e', 'performance'],
-                    testCode,
-                    metrics: {
-                        assertions: 28,
-                        scenarios: 8,
-                        edgeCases: 5,
-                        mocks: 3
-                    }
-                };
-            };
-
-            // Security Analysis Agent
-            const simulateSecurityScan = async (code) => {
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                
-                const vulnerabilities = [
-                    {
-                        id: 'SEC-001',
-                        severity: 'medium',
-                        type: 'XSS',
-                        description: 'Potential XSS vulnerability in user input handling',
-                        line: 45,
-                        solution: 'Sanitize user input before rendering'
-                    }
-                ];
-                
-                return {
-                    riskLevel: 'low',
-                    securityScore: 85,
-                    vulnerabilities,
-                    recommendations: [
-                        'Implement input sanitization for all user inputs',
-                        'Use HTTPS for all API communications',
-                        'Add rate limiting to prevent abuse'
-                    ],
-                    compliance: {
-                        'OWASP Top 10': 8,
-                        'GDPR': 'Compliant',
-                        'SOC 2': 'Partially Compliant'
-                    }
-                };
-            };
-
-            // Optimization Engine Agent
-            const simulateOptimization = async (code) => {
-                await new Promise(resolve => setTimeout(resolve, 1100));
-                
-                return {
-                    performanceGains: '35% faster execution',
-                    optimizations: [
-                        'Memoized expensive calculations using useMemo',
-                        'Reduced re-renders with React.memo',
-                        'Implemented lazy loading for components',
-                        'Optimized bundle size with tree shaking'
-                    ],
-                    metrics: {
-                        bundleSize: { before: '1.2MB', after: '850KB', reduction: '29%' },
-                        loadTime: { before: '3.2s', after: '2.1s', improvement: '34%' },
-                        memoryUsage: { before: '45MB', after: '32MB', reduction: '29%' }
-                    },
-                    suggestions: [
-                        'Consider code splitting for further optimization',
-                        'Implement service worker for caching',
-                        'Use Web Workers for heavy computations'
-                    ]
-                };
-            };
-
-            // Documentation Generation Agent
-            const simulateDocumentationGeneration = async (code) => {
-                await new Promise(resolve => setTimeout(resolve, 900));
-                
-                const documentation = `# API Documentation
-
-## Overview
-This component provides a comprehensive user management interface with advanced filtering, sorting, and real-time updates.
-
-## Props
-- \`users\`: Array of user objects
-- \`onUserCreate\`: Function called when creating a new user
-- \`loading\`: Boolean indicating loading state
-
-## Usage
-\`\`\`jsx
-<UserManagement 
-  users={users}
-  onUserCreate={handleUserCreate}
-  loading={isLoading}
-/>
-\`\`\``;
-
-                return {
-                    documentation,
-                    coverage: 88,
-                    sections: ['API Reference', 'Usage Examples', 'Configuration'],
-                    formats: ['Markdown', 'JSDoc', 'OpenAPI']
-                };
-            };
-
-            // Enhanced Search System
-            const performIntelligentSearch = async (query, intent, context) => {
-                const searchQueries = generateSmartSearchQueries(query, intent);
-                const results = [];
-                
-                for (const searchQuery of searchQueries) {
-                    const searchResults = await simulateEnhancedSearch(searchQuery, intent);
-                    results.push(...searchResults);
-                }
-                
-                return rankSearchResults(results, query, intent, context);
-            };
-
-            const generateSmartSearchQueries = (query, intent) => {
-                const baseQueries = [query];
-                
-                const queryExpansions = {
-                    codeGeneration: [`${query} best practices`, `${query} examples`, `${query} tutorial`],
-                    debugging: [`${query} solution`, `${query} troubleshooting`, `${query} common issues`],
-                    optimization: [`${query} performance`, `${query} optimization`, `${query} benchmarks`],
-                    testing: [`${query} testing`, `${query} unit tests`, `${query} test coverage`],
-                    security: [`${query} security`, `${query} vulnerabilities`, `${query} best practices`]
-                };
-                
-                if (queryExpansions[intent.primary]) {
-                    baseQueries.push(...queryExpansions[intent.primary]);
-                }
-                
-                return baseQueries;
-            };
-
-            const simulateEnhancedSearch = async (query, intent) => {
-                await new Promise(resolve => setTimeout(resolve, 600));
-                
-                const mockResults = [
-                    {
-                        title: `Advanced ${intent.primary} Guide - Stack Overflow`,
-                        url: `https://stackoverflow.com/questions/${intent.primary}`,
-                        snippet: `Comprehensive guide covering ${intent.primary} with modern best practices, real-world examples, and expert insights.`,
-                        source: 'stackoverflow',
-                        score: 95,
-                        relevanceScore: 98,
-                        aiRelevance: 0.92,
-                        date: '2024-01-15',
-                        type: 'tutorial',
-                        votes: 1250,
-                        views: 45000
-                    },
-                    {
-                        title: `${intent.primary.charAt(0).toUpperCase() + intent.primary.slice(1)} Official Documentation`,
-                        url: `https://docs.example.com/${intent.primary}`,
-                        snippet: `Official documentation with comprehensive API references, migration guides, and best practices.`,
-                        source: 'official',
-                        score: 98,
-                        relevanceScore: 95,
-                        aiRelevance: 0.89,
-                        date: '2024-02-01',
-                        type: 'documentation',
-                        authoritative: true
-                    },
-                    {
-                        title: `GitHub Repository - Production ${intent.primary} Examples`,
-                        url: `https://github.com/awesome-${intent.primary}`,
-                        snippet: `Production-ready code examples, templates, and boilerplates for ${intent.primary} with TypeScript support.`,
-                        source: 'github',
-                        score: 88,
-                        relevanceScore: 90,
-                        aiRelevance: 0.85,
-                        date: '2024-01-20',
-                        type: 'examples',
-                        stars: 12500,
-                        forks: 2800
-                    }
-                ];
-                
-                return mockResults;
-            };
-
-            const rankSearchResults = (results, query, intent, context) => {
-                return results
-                    .map(result => ({
-                        ...result,
-                        finalScore: calculateRelevanceScore(result, query, intent, context)
-                    }))
-                    .sort((a, b) => b.finalScore - a.finalScore);
-            };
-
-            const calculateRelevanceScore = (result, query, intent, context) => {
-                let score = result.score * 0.3;
-                score += result.aiRelevance * 100 * 0.4;
-                score += result.relevanceScore * 0.3;
-                
-                const sourceBoosts = {
-                    'official': 15,
-                    'github': 12,
-                    'stackoverflow': 10,
-                    'mdn': 14,
-                    'medium': 6
-                };
-                score += sourceBoosts[result.source] || 0;
-                
-                return score;
-            };
-
-            // Code Execution Simulation
-            const simulateCodeExecution = async (code) => {
-                await new Promise(resolve => setTimeout(resolve, 1800));
-                
-                const logs = [
-                    '🔧 Initializing development environment...',
-                    '📦 Installing dependencies...',
-                    '⚡ Compiling TypeScript...',
-                    '🧪 Running tests...',
-                    '✅ All tests passed (15/15)',
-                    '🏗️ Building production bundle...',
-                    '✨ Build completed successfully!'
-                ];
-                
-                return {
-                    status: 'success',
-                    output: 'Code executed successfully! All tests passed and build completed.',
-                    executionTime: '2.3s',
-                    memoryUsage: '18.4MB',
-                    logs,
-                    performance: {
-                        compilationTime: '850ms',
-                        testTime: '1.2s',
-                        buildTime: '2.1s'
-                    }
-                };
-            };
-
-            // === COMBINED AI PROCESSING ===
-
-            // Multi-Model AI Processing
-            const processWithMultipleModels = async (query, context) => {
-                const tasks = [];
-                
-                if (detectImageGeneration(query)) {
-                    tasks.push({ model: 'dall-e-3', type: 'image', query });
-                }
-                
-                if (detectCodeGeneration(query)) {
-                    tasks.push({ model: 'codex', type: 'code', query });
-                }
-                
-                if (detectAnalysis(query)) {
-                    tasks.push({ model: 'claude-3-opus', type: 'analysis', query });
-                }
-
-                const results = await Promise.all(
-                    tasks.map(async (task) => {
-                        await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
-                        return {
-                            model: task.model,
-                            type: task.type,
-                            result: `Generated ${task.type} content using ${task.model}`,
-                            confidence: Math.random() * 0.3 + 0.7
-                        };
-                    })
-                );
-                
-                return {
-                    results,
-                    modelsUsed: results.map(r => r.model),
-                    combinedConfidence: results.reduce((sum, r) => sum + r.confidence, 0) / results.length
-                };
-            };
-
-            const detectImageGeneration = (query) => /image|picture|photo|visual|draw|design|mockup|wireframe/i.test(query);
-            const detectCodeGeneration = (query) => /code|function|class|component|api|database|app|build|create/i.test(query);
-            const detectAnalysis = (query) => /analyze|explain|compare|evaluate|assess|review/i.test(query);
-
-            // Context Building
-            const buildContextFromHistory = () => {
-                const recentMessages = messages.slice(-10);
-                const languages = new Set();
-                const frameworks = new Set();
-                const topics = new Set();
-                
-                recentMessages.forEach(msg => {
-                    if (msg.type === 'user') {
-                        const lang = detectLanguage(msg.content);
-                        const framework = detectFramework(msg.content);
-                        const topic = detectProblemType(msg.content);
-                        
-                        if (lang !== 'general') languages.add(lang);
-                        if (framework) frameworks.add(framework);
-                        if (topic !== 'general') topics.add(topic);
-                    }
-                });
-                
-                return {
-                    recentLanguages: Array.from(languages),
-                    recentFrameworks: Array.from(frameworks),
-                    recentTopics: Array.from(topics),
-                    conversationLength: messages.length,
-                    userExpertise: calculateUserExpertise()
-                };
-            };
-
-            const calculateUserExpertise = () => {
-                const patterns = learningData.userPatterns;
-                const totalInteractions = Object.values(patterns).reduce((sum, data) => sum + (data.frequency || 0), 0);
-                
-                if (totalInteractions > 50) return 'expert';
-                if (totalInteractions > 20) return 'advanced';
-                if (totalInteractions > 5) return 'intermediate';
-                return 'beginner';
-            };
-
-            // === MAIN AI RESPONSE HANDLER ===
-
-            const simulateAdvancedAIResponse = async (query) => {
-                setIsThinking(true);
-                setIsLearning(true);
-                
-                const intent = analyzeUserIntent(query);
-                const context = buildContextFromHistory();
-                const complexity = assessQueryComplexity(query);
-                
-                // Multi-model processing
-                const aiResults = await processWithMultipleModels(query, context);
-                
-                // Generate advanced code if needed
-                let generatedCode = null;
-                if (autoMode.codeGeneration && (intent.includesCode || complexity.requiresCode)) {
-                    generatedCode = await advancedCodeGeneration(query, intent);
-                }
-                
-                // Run autonomous agents
-                let agentResults = {};
-                if (generatedCode && activeAgents.length > 0) {
-                    agentResults = await runAutonomousAgents(generatedCode.template, intent);
-                }
-                
-                // Enhanced search
-                const searchResults = await performIntelligentSearch(query, intent, context);
-                
-                // Execute code if applicable
-                let executionResults = null;
-                if (generatedCode && autoMode.testing) {
-                    executionResults = await simulateCodeExecution(generatedCode.template);
-                }
-                
-                setIsThinking(false);
-                setIsLearning(false);
-                
-                return {
-                    mainResponse: generateContextualResponse(query, aiResults, intent, context),
-                    generatedCode,
-                    agentResults,
-                    searchResults,
-                    executionResults,
-                    metadata: {
-                        modelsUsed: aiResults.modelsUsed || [selectedModel],
-                        confidence: calculateOverallConfidence(aiResults, agentResults),
-                        processingTime: Date.now(),
-                        suggestions: generateNextStepSuggestions(intent, generatedCode)
-                    }
-                };
-            };
-
-            const generateContextualResponse = (query, aiResults, intent, context) => {
-                const language = detectLanguage(query);
-                const problemType = detectProblemType(query);
-                
-                return {
-                    text: `I've analyzed your request for ${intent.primary} in ${language}. Based on your conversation history and the detected ${problemType} problem type, here's my comprehensive response:`,
-                    language,
-                    problemType,
-                    confidence: aiResults.combinedConfidence || 0.85,
-                    insights: [
-                        `Detected language: ${language}`,
-                        `Problem type: ${problemType}`,
-                        `Complexity: ${intent.complexity}`,
-                        `User expertise: ${context.userExpertise}`,
-                        `Active agents: ${activeAgents.length}`,
-                        `Models used: ${aiResults.modelsUsed?.join(', ') || selectedModel}`
-                    ]
-                };
-            };
-
-            const calculateOverallConfidence = (aiResults, agentResults) => {
-                const aiConfidence = aiResults.combinedConfidence || 0.8;
-                const agentConfidences = Object.values(agentResults).map(result => result.confidence || 0.8);
-                const avgAgentConfidence = agentConfidences.length > 0 
-                    ? agentConfidences.reduce((sum, conf) => sum + conf, 0) / agentConfidences.length 
-                    : 0.8;
-                
-                return (aiConfidence + avgAgentConfidence) / 2;
-            };
-
-            const generateNextStepSuggestions = (intent, generatedCode) => {
-                const suggestions = [];
-                
-                if (generatedCode) {
-                    suggestions.push('Run the generated code in a sandbox environment');
-                    suggestions.push('Generate comprehensive tests for this code');
-                    suggestions.push('Add error handling and validation');
-                    suggestions.push('Optimize for performance and scalability');
-                }
-                
-                if (intent.primary === 'deployment') {
-                    suggestions.push('Create Docker configuration');
-                    suggestions.push('Set up CI/CD pipeline');
-                    suggestions.push('Configure monitoring and logging');
-                }
-                
-                if (intent.primary === 'frontend') {
-                    suggestions.push('Add responsive design breakpoints');
-                    suggestions.push('Implement accessibility features');
-                    suggestions.push('Add loading states and error boundaries');
-                }
-                
-                return suggestions.slice(0, 3);
-            };
-
-            // === AGENT MANAGEMENT ===
-
-            const toggleAgent = (agentKey) => {
-                const newAgents = {...autonomousAgents};
-                newAgents[agentKey].active = !newAgents[agentKey].active;
-                setAutonomousAgents(newAgents);
-                
-                if (newAgents[agentKey].active) {
-                    setActiveAgents(prev => [...prev, agentKey]);
-                } else {
-                    setActiveAgents(prev => prev.filter(agent => agent !== agentKey));
-                }
-            };
-
-            // === MAIN EVENT HANDLERS ===
-
-            const handleSend = async () => {
-                if (!input.trim()) return;
-
-                const userMessage = {
-                    id: Date.now(),
-                    type: 'user',
-                    content: input,
-                    timestamp: new Date(),
-                    metadata: {
-                        workspaceMode,
-                        selectedModel,
-                        activeAgents: activeAgents.filter(agent => autonomousAgents[agent]?.active)
-                    }
-                };
-
-                setMessages(prev => [...prev, userMessage]);
-                setInput('');
-                setIsLoading(true);
-
-                try {
-                    const response = await simulateAdvancedAIResponse(input);
-                    
-                    const aiMessage = {
-                        id: Date.now() + 1,
-                        type: 'ai',
-                        content: response.mainResponse,
-                        generatedCode: response.generatedCode,
-                        agentResults: response.agentResults,
-                        searchResults: response.searchResults,
-                        executionResults: response.executionResults,
-                        metadata: response.metadata,
-                        timestamp: new Date()
-                    };
-
-                    setMessages(prev => [...prev, aiMessage]);
-                    
-                    if (response.searchResults) {
-                        setSearchResults(response.searchResults);
-                    }
-                    
-                    if (response.executionResults) {
-                        setCodeExecutionResults(prev => [...prev, response.executionResults]);
-                    }
-                    
-                } catch (error) {
-                    console.error('Error:', error);
-                    setMessages(prev => [...prev, {
-                        id: Date.now() + 1,
-                        type: 'ai',
-                        content: {
-                            text: 'I encountered an error while processing your request. Please try again.',
-                            error: error.message
-                        },
-                        timestamp: new Date()
-                    }]);
-                } finally {
-                    setIsLoading(false);
-                }
-            };
-
-            const handleFeedback = (messageId, feedback) => {
-                console.log(`Feedback for message ${messageId}: ${feedback}`);
-                // Update learning data based on feedback
-            };
-
-            // Utility functions
-            const copyCode = (code) => {
-                navigator.clipboard.writeText(code);
-            };
-
-            const getSourceIcon = (source) => {
-                const icons = {
-                    'stackoverflow': '🔶',
-                    'github': '🐙',
-                    'mdn': '🌐',
-                    'official': '📋',
-                    'documentation': '📚',
-                    'tutorial': '🎓',
-                    'examples': '💡'
-                };
-                return icons[source] || '📄';
-            };
-
-            const getScoreColor = (score) => {
-                if (score >= 90) return 'text-green-600';
-                if (score >= 70) return 'text-yellow-600';
-                return 'text-red-600';
-            };
-
-            const getAgentStatusColor = (confidence) => {
-                if (confidence >= 0.9) return 'text-green-500';
-                if (confidence >= 0.7) return 'text-yellow-500';
-                return 'text-red-500';
-            };
-
-            const getSeverityIcon = (severity) => {
-                switch (severity) {
-                    case 'high': return React.createElement(AlertTriangle, { size: 16, className: "text-red-500" });
-                    case 'medium': return React.createElement(Info, { size: 16, className: "text-yellow-500" });
-                    case 'low': return React.createElement(CheckCircle, { size: 16, className: "text-green-500" });
-                    default: return React.createElement(Info, { size: 16, className: "text-blue-500" });
-                }
-            };
-
-            useEffect(() => {
-                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-            }, [messages]);
-
-            // Generate quick suggestions based on context
-            const generateQuickSuggestions = () => {
-                const context = buildContextFromHistory();
-                const suggestions = [];
-                
-                if (context.recentLanguages.includes('javascript')) {
-                    suggestions.push('Create a React component with TypeScript');
-                    suggestions.push('Build a REST API with Express.js');
-                }
-                
-                if (context.recentLanguages.includes('python')) {
-                    suggestions.push('Create a FastAPI microservice');
-                    suggestions.push('Build a machine learning model');
-                }
-                
-                if (workspaceMode === 'deployment') {
-                    suggestions.push('Create Docker configuration');
-                    suggestions.push('Set up Kubernetes deployment');
-                }
-                
-                if (workspaceMode === 'testing') {
-                    suggestions.push('Generate unit tests');
-                    suggestions.push('Set up integration testing');
-                }
-                
-                return suggestions.length > 0 ? suggestions.slice(0, 3) : learningData.personalizedSuggestions.slice(0, 3);
-            };
-
-            const quickSuggestions = generateQuickSuggestions();
-
-            // === RENDER COMPONENT ===
-
-            return React.createElement('div', { className: "flex h-screen bg-gray-900 text-white" },
-                // Advanced Sidebar
-                React.createElement('div', { 
-                    className: `${showFilters ? 'w-80' : 'w-0'} transition-all duration-300 bg-gray-800 overflow-hidden border-r border-gray-700` 
-                },
-                    React.createElement('div', { className: "p-4 space-y-6" },
-                        // AI Model Selection
-                        React.createElement('div', null,
-                            React.createElement('h3', { className: "text-lg font-semibold mb-3 flex items-center gap-2" },
-                                React.createElement(Cpu, { size: 20 }),
-                                "AI Models"
-                            ),
-                    
-                    // Messages
-                    React.createElement('div', { className: "flex-1 overflow-y-auto p-4 space-y-4" },
-                        messages.length === 0 ? (
-                            React.createElement('div', { className: "text-center text-gray-400 mt-8" },
-                                React.createElement(Crown, { size: 48, className: "mx-auto mb-4 text-gray-600" }),
-                                React.createElement('h2', { className: "text-xl font-semibold mb-2" }, "Welcome to Ultimate AI Assistant"),
-                                React.createElement('p', null, `Ask me anything about ${workspaceMode}! I'll use multiple AI models and autonomous agents.`),
-                                React.createElement('div', { className: "mt-4 text-sm space-y-1" },
-                                    React.createElement('p', null, "🧠 Advanced multi-model AI processing"),
-                                    React.createElement('p', null, "🤖 Autonomous code review and optimization"),
-                                    React.createElement('p', null, "🔍 Intelligent web search and analysis"),
-                                    React.createElement('p', null, "⚡ Real-time code generation and testing")
-                                )
-                            )
-                        ) : (
-                            messages.map((message) =>
-                                React.createElement('div', { 
-                                    key: message.id, 
-                                    className: `flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}` 
-                                },
-                                    message.type === 'user' ? (
-                                        React.createElement('div', { className: "max-w-3xl bg-blue-600 rounded-lg p-4" },
-                                            React.createElement('p', null, message.content),
-                                            React.createElement('div', { className: "text-xs text-blue-200 mt-2" },
-                                                message.timestamp.toLocaleTimeString()
-                                            )
-                                        )
-                                    ) : (
-                                        React.createElement('div', { className: "max-w-4xl bg-gray-700 rounded-lg p-4 space-y-4" },
-                                            // Main Response
-                                            React.createElement('div', { className: "flex items-center gap-2" },
-                                                React.createElement('p', null, message.content.text),
-                                                message.content.isAutoGenerated && React.createElement('span', { 
-                                                    className: "bg-green-600 text-xs px-2 py-1 rounded-full flex items-center gap-1" 
-                                                },
-                                                    React.createElement(Zap, { size: 12 }),
-                                                    "Auto-generated"
-                                                ),
-                                                message.metadata?.confidence && React.createElement('span', { 
-                                                    className: "bg-purple-600 text-xs px-2 py-1 rounded-full" 
-                                                },
-                                                    `${Math.round(message.metadata.confidence * 100)}% confident`
-                                                )
-                                            ),
-
-                                            // Generated Code
-                                            message.generatedCode && React.createElement('div', { className: "bg-gray-900 rounded-lg overflow-hidden" },
-                                                React.createElement('div', { className: "flex items-center justify-between px-4 py-2 bg-gray-800 text-sm" },
-                                                    React.createElement('span', { className: "flex items-center gap-2" },
-                                                        React.createElement(FileCode, { size: 16 }),
-                                                        message.generatedCode.language,
-                                                        message.generatedCode.confidence && React.createElement('span', { className: "text-green-400" },
-                                                            `${Math.round(message.generatedCode.confidence * 100)}% confidence`
-                                                        )
-                                                    ),
-                                                    React.createElement('div', { className: "flex items-center gap-2" },
-                                                        message.generatedCode.generatedBy && React.createElement('span', { className: "text-xs text-gray-400" },
-                                                            `Generated by: ${message.generatedCode.generatedBy.join(', ')}`
-                                                        ),
-                                                        React.createElement('button', {
-                                                            onClick: () => copyCode(message.generatedCode.template || message.generatedCode.code),
-                                                            className: "flex items-center gap-1 hover:text-blue-400 transition-colors"
-                                                        },
-                                                            React.createElement(Copy, { size: 16 }),
-                                                            "Copy"
-                                                        )
-                                                    )
-                                                ),
-                                                React.createElement('pre', { className: "p-4 overflow-x-auto code-block" },
-                                                    React.createElement('code', { className: "text-sm" }, 
-                                                        message.generatedCode.template || message.generatedCode.code
-                                                    )
-                                                )
-                                            ),
-
-                                            // Agent Results
-                                            message.agentResults && Object.keys(message.agentResults).length > 0 && 
-                                                React.createElement('div', { className: "space-y-3" },
-                                                    React.createElement('h4', { className: "font-medium flex items-center gap-2" },
-                                                        React.createElement(Bot, { size: 16 }),
-                                                        "Agent Analysis Results"
-                                                    ),
-                                                    
-                                                    // Code Review Results
-                                                    message.agentResults.codeReview && React.createElement('div', { 
-                                                        className: "bg-blue-900/30 border border-blue-700 rounded-lg p-3" 
-                                                    },
-                                                        React.createElement('h5', { className: "font-medium mb-2 flex items-center gap-2" },
-                                                            React.createElement(Search, { size: 16 }),
-                                                            `Code Review (Score: ${message.agentResults.codeReview.score}/10)`
-                                                        ),
-                                                        React.createElement('div', { className: "space-y-2" },
-                                                            message.agentResults.codeReview.issues && message.agentResults.codeReview.issues.map((issue, index) =>
-                                                                React.createElement('div', { key: index, className: "flex items-start gap-2 text-sm" },
-                                                                    getSeverityIcon(issue.severity),
-                                                                    React.createElement('div', null,
-                                                                        React.createElement('span', { className: "font-medium" }, issue.message),
-                                                                        issue.line && React.createElement('span', { className: "text-gray-400 ml-2" }, `Line ${issue.line}`)
-                                                                    )
-                                                                )
-                                                            )
-                                                        )
-                                                    ),
-
-                                                    // Security Analysis
-                                                    message.agentResults.security && React.createElement('div', { 
-                                                        className: "bg-red-900/30 border border-red-700 rounded-lg p-3" 
-                                                    },
-                                                        React.createElement('h5', { className: "font-medium mb-2 flex items-center gap-2" },
-                                                            React.createElement(Shield, { size: 16 }),
-                                                            `Security Analysis (Score: ${message.agentResults.security.securityScore}/100)`
-                                                        ),
-                                                        React.createElement('div', { className: "text-sm" },
-                                                            React.createElement('p', { className: "mb-2" }, 
-                                                                `Risk Level: `,
-                                                                React.createElement('span', { className: "font-medium" }, message.agentResults.security.riskLevel)
-                                                            ),
-                                                            message.agentResults.security.vulnerabilities.length > 0 && React.createElement('div', null,
-                                                                React.createElement('p', { className: "font-medium mb-1" }, "Vulnerabilities:"),
-                                                                message.agentResults.security.vulnerabilities.map((vuln, index) =>
-                                                                    React.createElement('div', { key: index, className: "ml-2 mb-1" },
-                                                                        React.createElement('span', { className: "text-red-400" }, vuln.type),
-                                                                        ` - ${vuln.description}`
-                                                                    )
-                                                                )
-                                                            )
-                                                        )
-                                                    ),
-
-                                                    // Performance Optimization
-                                                    message.agentResults.optimization && React.createElement('div', { 
-                                                        className: "bg-green-900/30 border border-green-700 rounded-lg p-3" 
-                                                    },
-                                                        React.createElement('h5', { className: "font-medium mb-2 flex items-center gap-2" },
-                                                            React.createElement(TrendingUp, { size: 16 }),
-                                                            "Performance Optimization"
-                                                        ),
-                                                        React.createElement('div', { className: "text-sm" },
-                                                            React.createElement('p', { className: "mb-2 text-green-400" }, 
-                                                                message.agentResults.optimization.performanceGains
-                                                            ),
-                                                            message.agentResults.optimization.metrics && React.createElement('div', { 
-                                                                className: "grid grid-cols-2 gap-2 text-xs" 
-                                                            },
-                                                                React.createElement('div', null, 
-                                                                    `Bundle: ${message.agentResults.optimization.metrics.bundleSize?.after}`
-                                                                ),
-                                                                React.createElement('div', null, 
-                                                                    `Load: ${message.agentResults.optimization.metrics.loadTime?.after}`
-                                                                )
-                                                            )
-                                                        )
-                                                    ),
-
-                                                    // Test Results
-                                                    message.agentResults.tests && React.createElement('div', { 
-                                                        className: "bg-purple-900/30 border border-purple-700 rounded-lg p-3" 
-                                                    },
-                                                        React.createElement('h5', { className: "font-medium mb-2 flex items-center gap-2" },
-                                                            React.createElement(CheckCircle, { size: 16 }),
-                                                            `Test Generation (Coverage: ${message.agentResults.tests.coverage}%)`
-                                                        ),
-                                                        React.createElement('div', { className: "text-sm" },
-                                                            React.createElement('p', null, `Generated ${message.agentResults.tests.testsGenerated} tests`),
-                                                            React.createElement('p', null, `Types: ${message.agentResults.tests.testTypes.join(', ')}`)
-                                                        )
-                                                    )
-                                                ),
-
-                                            // Code Execution Results
-                                            message.executionResults && React.createElement('div', { className: "bg-gray-800 rounded-lg p-3" },
-                                                React.createElement('h5', { className: "font-medium mb-2 flex items-center gap-2" },
-                                                    React.createElement(Terminal, { size: 16 }),
-                                                    "Execution Results"
-                                                ),
-                                                React.createElement('div', { className: "text-sm space-y-1" },
-                                                    React.createElement('div', { className: "flex items-center gap-2" },
-                                                        React.createElement('span', { 
-                                                            className: `w-2 h-2 rounded-full ${
-                                                                message.executionResults.status === 'success' ? 'bg-green-500' : 'bg-red-500'
-                                                            }`
-                                                        }),
-                                                        React.createElement('span', null, message.executionResults.output)
-                                                    ),
-                                                    React.createElement('div', { className: "text-gray-400 text-xs" },
-                                                        `Time: ${message.executionResults.executionTime} | Memory: ${message.executionResults.memoryUsage}`
-                                                    )
-                                                )
-                                            ),
-
-                                            // Learning Insights
-                                            message.content.insights && React.createElement('div', { 
-                                                className: "bg-purple-900/30 border border-purple-700 rounded-lg p-3" 
-                                            },
-                                                React.createElement('h4', { className: "text-sm font-medium mb-2 flex items-center gap-2" },
-                                                    React.createElement(TrendingUp, { size: 16 }),
-                                                    "AI Insights"
-                                                ),
-                                                React.createElement('ul', { className: "text-sm space-y-1" },
-                                                    message.content.insights.map((insight, index) =>
-                                                        React.createElement('li', { key: index, className: "text-purple-300" }, 
-                                                            `• ${insight}`
-                                                        )
-                                                    )
-                                                )
-                                            ),
-
-                                            // Search Results
-                                            message.searchResults && message.searchResults.length > 0 && React.createElement('div', { className: "mt-4" },
-                                                React.createElement('h4', { className: "text-sm font-medium mb-2 flex items-center gap-2" },
-                                                    React.createElement(Search, { size: 16 }),
-                                                    `Search Results (${message.searchResults.length})`
-                                                ),
-                                                React.createElement('div', { className: "space-y-2" },
-                                                    message.searchResults.slice(0, 3).map((result, index) =>
-                                                        React.createElement('div', { key: index, className: "bg-gray-800 rounded-lg p-3 text-sm" },
-                                                            React.createElement('div', { className: "flex items-center justify-between mb-1" },
-                                                                React.createElement('div', { className: "flex items-center gap-2" },
-                                                                    React.createElement('span', null, getSourceIcon(result.source)),
-                                                                    React.createElement('span', { className: "font-medium" }, result.title)
-                                                                ),
-                                                                React.createElement('div', { className: "flex items-center gap-2 text-xs text-gray-400" },
-                                                                    React.createElement(Star, { size: 12 }),
-                                                                    React.createElement('span', { className: getScoreColor(result.score) }, result.score),
-                                                                    result.aiRelevance && React.createElement('span', { className: "text-purple-400" },
-                                                                        `${Math.round(result.aiRelevance * 100)}% relevant`
-                                                                    )
-                                                                )
-                                                            ),
-                                                            React.createElement('p', { className: "text-gray-300 mb-2" }, result.snippet),
-                                                            React.createElement('div', { className: "flex items-center justify-between" },
-                                                                React.createElement('div', { className: "flex items-center gap-1 text-xs text-gray-400" },
-                                                                    React.createElement(Clock, { size: 12 }),
-                                                                    result.date
-                                                                ),
-                                                                React.createElement('a', {
-                                                                    href: result.url,
-                                                                    target: "_blank",
-                                                                    rel: "noopener noreferrer",
-                                                                    className: "flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs"
-                                                                },
-                                                                    React.createElement(ExternalLink, { size: 12 }),
-                                                                    "View Source"
-                                                                )
-                                                            )
-                                                        )
-                                                    )
-                                                )
-                                            ),
-
-                                            // Feedback and Next Steps
-                                            React.createElement('div', { className: "pt-3 border-t border-gray-600" },
-                                                React.createElement('div', { className: "flex items-center justify-between" },
-                                                    React.createElement('div', { className: "flex items-center gap-2" },
-                                                        React.createElement('button', {
-                                                            onClick: () => handleFeedback(message.id, 'positive'),
-                                                            className: "text-xs px-3 py-1 bg-green-600 hover:bg-green-700 rounded-full transition-colors"
-                                                        }, "👍 Helpful"),
-                                                        React.createElement('button', {
-                                                            onClick: () => handleFeedback(message.id, 'negative'),
-                                                            className: "text-xs px-3 py-1 bg-red-600 hover:bg-red-700 rounded-full transition-colors"
-                                                        }, "👎 Not helpful")
-                                                    ),
-                                                    message.metadata?.suggestions && React.createElement('div', { className: "flex items-center gap-1" },
-                                                        React.createElement(Lightbulb, { size: 14, className: "text-yellow-400" }),
-                                                        React.createElement('span', { className: "text-xs text-gray-400" },
-                                                            `${message.metadata.suggestions.length} suggestions available`
-                                                        )
-                                                    )
-                                                ),
-
-                                                // Next Step Suggestions
-                                                message.metadata?.suggestions && message.metadata.suggestions.length > 0 && 
-                                                    React.createElement('div', { className: "mt-3 pt-2 border-t border-gray-600" },
-                                                        React.createElement('p', { className: "text-xs text-gray-400 mb-2" }, "💡 Next steps:"),
-                                                        React.createElement('div', { className: "flex flex-wrap gap-1" },
-                                                            message.metadata.suggestions.slice(0, 3).map((suggestion, index) =>
-                                                                React.createElement('button', {
-                                                                    key: index,
-                                                                    className: "text-xs bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded transition-colors"
-                                                                }, suggestion)
-                                                            )
-                                                        )
-                                                    )
-                                            ),
-
-                                            React.createElement('div', { className: "text-xs text-gray-400 mt-2" },
-                                                `${message.timestamp.toLocaleTimeString()} • `,
-                                                message.metadata?.modelsUsed && `Models: ${message.metadata.modelsUsed.join(', ')}`
-                                            )
-                                        )
-                                    )
-                                )
-                            )
-                        ),
-                        
-                        isLoading && React.createElement('div', { className: "flex justify-start" },
-                            React.createElement('div', { className: "bg-gray-700 rounded-lg p-4" },
-                                React.createElement('div', { className: "flex items-center gap-2" },
-                                    React.createElement('div', { className: "animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400" }),
-                                    React.createElement('span', null,
-                                        isThinking && isLearning 
-                                            ? 'Thinking and learning from patterns...' 
-                                            : isThinking 
-                                                ? 'Processing with multiple AI models...' 
-                                                : isLearning
-                                                    ? 'Learning from your preferences...'
-                                                    : 'Generating response...'
-                                    )
-                                )
-                            )
-                        ),
-                        
-                        React.createElement('div', { ref: messagesEndRef })
-                    ),
-                    
-                    // Input Area
-                    React.createElement('div', { className: "bg-gray-800 p-4 border-t border-gray-700" },
-                        quickSuggestions.length > 0 && React.createElement('div', { className: "mb-3" },
-                            React.createElement('div', { className: "text-xs text-gray-400 mb-2" }, "💡 Quick suggestions:"),
-                            React.createElement('div', { className: "flex gap-2 flex-wrap" },
-                                quickSuggestions.map((suggestion, index) =>
-                                    React.createElement('button', {
-                                        key: index,
-                                        onClick: () => setInput(suggestion),
-                                        className: "text-xs bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded-full transition-colors"
-                                    }, suggestion)
-                                )
-                            )
-                        ),
-                        
-                        React.createElement('div', { className: "flex gap-2" },
-                            React.createElement('input', {
-                                type: "text",
-                                value: input,
-                                onChange: (e) => setInput(e.target.value),
-                                onKeyPress: (e) => e.key === 'Enter' && handleSend(),
-                                placeholder: `Ask me anything about ${workspaceMode}... I'll use multiple AI models and agents!`,
-                                className: "flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-400"
-                            }),
-                            React.createElement('button', {
-                                onClick: handleSend,
-                                disabled: isLoading || !input.trim(),
-                                className: "bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-4 py-2 rounded-lg transition-colors"
-                            },
-                                isLoading ? 
-                                    React.createElement('div', { className: "animate-spin rounded-full h-5 w-5 border-b-2 border-white" }) :
-                                    React.createElement(Send, { size: 20 })
-                            )
-                        ),
-                        
-                        React.createElement('div', { className: "mt-2 text-xs text-gray-400 flex items-center justify-between" },
-                            React.createElement('span', null, 
-                                `${autoMode.codeGeneration ? '🧠 Auto-generation enabled' : '💬 Standard mode'} • ${workspaceMode} workspace • ${activeAgents.length} agents active`
-                            ),
-                            React.createElement('button', {
-                                onClick: () => setAutoMode({...autoMode, codeGeneration: !autoMode.codeGeneration}),
-                                className: "text-blue-400 hover:text-blue-300"
-                            },
-                                `${autoMode.codeGeneration ? 'Disable' : 'Enable'} auto-generation`
-                            )
-                        )
-                    )
-                )
-            );
-        };
-
-        ReactDOM.render(React.createElement(UltimateAIAssistant), document.getElementById('root'));
-    </script>
-</body>
-</html>
-                            React.createElement('select', {
-                                value: selectedModel,
-                                onChange: (e) => setSelectedModel(e.target.value),
-                                className: "w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white"
-                            },
-                                Object.entries(aiModels).map(([key, model]) =>
-                                    React.createElement('option', { key, value: key },
-                                        `${model.icon} ${model.name} - ${model.strength}`
-                                    )
-                                )
-                            )
-                        ),
-                        
-                        // Workspace Mode
-                        React.createElement('div', null,
-                            React.createElement('h3', { className: "text-lg font-semibold mb-3 flex items-center gap-2" },
-                                React.createElement(Workflow, { size: 20 }),
-                                "Workspace"
-                            ),
-                            React.createElement('div', { className: "grid grid-cols-2 gap-2" },
-                                Object.entries(workspaceModes).map(([mode, config]) => {
-                                    const IconComponent = config.icon;
-                                    return React.createElement('button', {
-                                        key: mode,
-                                        onClick: () => setWorkspaceMode(mode),
-                                        className: `p-2 rounded-lg text-xs font-medium transition-all ${
-                                            workspaceMode === mode 
-                                                ? `${config.color} text-white` 
-                                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                                        }`
-                                    },
-                                        React.createElement(IconComponent, { size: 16, className: "mx-auto mb-1" }),
-                                        mode.charAt(0).toUpperCase() + mode.slice(1)
-                                    );
-                                })
-                            )
-                        ),
-                        
-                        // Autonomous Agents
-                        React.createElement('div', null,
-                            React.createElement('h3', { className: "text-lg font-semibold mb-3 flex items-center gap-2" },
-                                React.createElement(Bot, { size: 20 }),
-                                "AI Agents"
-                            ),
-                            React.createElement('div', { className: "space-y-2 max-h-60 overflow-y-auto" },
-                                Object.entries(autonomousAgents).map(([key, agent]) =>
-                                    React.createElement('div', { key, className: "bg-gray-700 rounded-lg p-3" },
-                                        React.createElement('div', { className: "flex items-center justify-between mb-2" },
-                                            React.createElement('div', { className: "flex items-center gap-2" },
-                                                React.createElement('input', {
-                                                    type: "checkbox",
-                                                    checked: agent.active,
-                                                    onChange: () => toggleAgent(key),
-                                                    className: "rounded"
-                                                }),
-                                                React.createElement('span', { className: "font-medium text-sm" }, agent.name)
-                                            ),
-                                            React.createElement('span', { 
-                                                className: `text-xs ${getAgentStatusColor(agent.confidence)}`
-                                            }, `${Math.round(agent.confidence * 100)}%`)
-                                        ),
-                                        React.createElement('p', { className: "text-xs text-gray-400" }, agent.description)
-                                    )
-                                )
-                            )
-                        ),
-
-                        // Auto Mode Settings
-                        React.createElement('div', null,
-                            React.createElement('h3', { className: "text-lg font-semibold mb-3 flex items-center gap-2" },
-                                React.createElement(Zap, { size: 20 }),
-                                "Automation"
-                            ),
-                            React.createElement('div', { className: "space-y-2" },
-                                Object.entries(autoMode).map(([key, enabled]) =>
-                                    React.createElement('label', { key, className: "flex items-center gap-2 text-sm" },
-                                        React.createElement('input', {
-                                            type: "checkbox",
-                                            checked: enabled,
-                                            onChange: (e) => setAutoMode({...autoMode, [key]: e.target.checked}),
-                                            className: "rounded"
-                                        }),
-                                        React.createElement('span', null, key.replace(/([A-Z])/g, ' $1').toLowerCase())
-                                    )
-                                )
-                            )
-                        ),
-
-                        // Connected Tools
-                        React.createElement('div', null,
-                            React.createElement('h3', { className: "text-lg font-semibold mb-3 flex items-center gap-2" },
-                                React.createElement(Network, { size: 20 }),
-                                "Integrations"
-                            ),
-                            React.createElement('div', { className: "grid grid-cols-2 gap-2" },
-                                Object.entries(connectedTools).map(([tool, connected]) =>
-                                    React.createElement('div', { 
-                                        key: tool, 
-                                        className: `p-2 rounded text-xs text-center ${
-                                            connected ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-400'
-                                        }`
-                                    }, tool.charAt(0).toUpperCase() + tool.slice(1))
-                                )
-                            )
-                        ),
-
-                        // Search Filters
-                        React.createElement('div', null,
-                            React.createElement('h3', { className: "text-lg font-semibold mb-3 flex items-center gap-2" },
-                                React.createElement(Filter, { size: 20 }),
-                                "Search Filters"
-                            ),
-                            React.createElement('div', { className: "space-y-4" },
-                                React.createElement('div', null,
-                                    React.createElement('label', { className: "block text-sm font-medium mb-2" }, "Language"),
-                                    React.createElement('select', {
-                                        value: filters.language,
-                                        onChange: (e) => setFilters({...filters, language: e.target.value}),
-                                        className: "w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white"
-                                    },
-                                        React.createElement('option', { value: "" }, "All Languages"),
-                                        React.createElement('option', { value: "javascript" }, "JavaScript"),
-                                        React.createElement('option', { value: "typescript" }, "TypeScript"),
-                                        React.createElement('option', { value: "python" }, "Python"),
-                                        React.createElement('option', { value: "java" }, "Java"),
-                                        React.createElement('option', { value: "cpp" }, "C++"),
-                                        React.createElement('option', { value: "rust" }, "Rust"),
-                                        React.createElement('option', { value: "go" }, "Go")
-                                    )
-                                ),
-                                React.createElement('div', null,
-                                    React.createElement('label', { className: "block text-sm font-medium mb-2" }, "Source"),
-                                    React.createElement('select', {
-                                        value: filters.source,
-                                        onChange: (e) => setFilters({...filters, source: e.target.value}),
-                                        className: "w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white"
-                                    },
-                                        React.createElement('option', { value: "" }, "All Sources"),
-                                        React.createElement('option', { value: "stackoverflow" }, "Stack Overflow"),
-                                        React.createElement('option', { value: "github" }, "GitHub"),
-                                        React.createElement('option', { value: "official" }, "Official Docs"),
-                                        React.createElement('option', { value: "mdn" }, "MDN")
-                                    )
-                                )
-                            )
-                        )
-                    )
-                ),
-
-                // Analytics Panel
-                showAnalytics && React.createElement('div', { className: "w-80 bg-gray-800 border-l border-gray-700 p-4 overflow-y-auto" },
-                    React.createElement('h3', { className: "text-lg font-semibold mb-4 flex items-center gap-2" },
-                        React.createElement(BarChart3, { size: 20 }),
-                        "Analytics & Insights"
-                    ),
-                    React.createElement('div', { className: "space-y-4" },
-                        // Performance Metrics
-                        React.createElement('div', null,
-                            React.createElement('h4', { className: "font-medium mb-2" }, "AI Performance"),
-                            React.createElement('div', { className: "space-y-2" },
-                                React.createElement('div', { className: "flex justify-between text-sm" },
-                                    React.createElement('span', null, "Accuracy"),
-                                    React.createElement('span', { className: "text-green-400" }, `${learningData.performance.accuracy}%`)
-                                ),
-                                React.createElement('div', { className: "flex justify-between text-sm" },
-                                    React.createElement('span', null, "Speed"),
-                                    React.createElement('span', { className: "text-blue-400" }, `${learningData.performance.speed}%`)
-                                ),
-                                React.createElement('div', { className: "flex justify-between text-sm" },
-                                    React.createElement('span', null, "Satisfaction"),
-                                    React.createElement('span', { className: "text-purple-400" }, `${learningData.performance.satisfaction}%`)
-                                )
-                            )
-                        ),
-                        // Language Usage
-                        React.createElement('div', null,
-                            React.createElement('h4', { className: "font-medium mb-2" }, "Language Usage"),
-                            Object.entries(learningData.userPatterns).map(([lang, data]) =>
-                                React.createElement('div', { key: lang, className: "flex justify-between text-sm mb-1" },
-                                    React.createElement('span', null, lang),
-                                    React.createElement('span', { className: "text-blue-400" }, `${data.frequency}x`)
-                                )
-                            )
-                        ),
-                        // Recent Activity
-                        React.createElement('div', null,
-                            React.createElement('h4', { className: "font-medium mb-2" }, "Recent Activity"),
-                            React.createElement('div', { className: "text-sm text-gray-400" },
-                                React.createElement('p', null, `${learningData.contextHistory.length} total interactions`),
-                                React.createElement('p', null, `${learningData.successfulSolutions.length} successful solutions`),
-                                React.createElement('p', null, `${activeAgents.length} active agents`)
-                            )
-                        )
-                    )
-                ),
-
-                // Main Chat Area
-                React.createElement('div', { className: "flex-1 flex flex-col" },
-                    // Header
-                    React.createElement('div', { className: "bg-gray-800 p-4 border-b border-gray-700 flex items-center justify-between" },
-                        React.createElement('div', { className: "flex items-center gap-3" },
-                            React.createElement(Crown, { className: "text-yellow-400", size: 24 }),
-                            React.createElement('h1', { className: "text-xl font-semibold" }, "Ultimate AI Assistant"),
-                            React.createElement('span', { className: "text-sm bg-purple-600 px-2 py-1 rounded-full" }, "Enterprise"),
-                            isThinking && React.createElement('div', { className: "flex items-center gap-2 text-sm text-purple-400" },
-                                React.createElement(Sparkles, { size: 16, className: "animate-pulse" }),
-                                "Thinking..."
-                            ),
-                            isLearning && React.createElement('div', { className: "flex items-center gap-2 text-sm text-yellow-400" },
-                                React.createElement(TrendingUp, { size: 16, className: "animate-pulse" }),
-                                "Learning..."
-                            )
-                        ),
-                        React.createElement('div', { className: "flex items-center gap-2" },
-                            React.createElement('button', {
-                                onClick: () => setShowAnalytics(!showAnalytics),
-                                className: `p-2 rounded-lg transition-colors ${
-                                    showAnalytics ? 'bg-yellow-600 text-white' : 'hover:bg-gray-700'
-                                }`
-                            },
-                                React.createElement(BarChart3, { size: 20 })
-                            ),
-                            React.createElement('button', {
-                                onClick: () => setShowAgentPanel(!showAgentPanel),
-                                className: `p-2 rounded-lg transition-colors ${
-                                    showAgentPanel ? 'bg-purple-600 text-white' : 'hover:bg-gray-700'
-                                }`
-                            },
-                                React.createElement(Bot, { size: 20 })
-                            ),
-                            React.createElement('button', {
-                                onClick: () => setShowFilters(!showFilters),
-                                className: `p-2 rounded-lg transition-colors ${
-                                    showFilters ? 'bg-blue-600 text-white' : 'hover:bg-gray-700'
-                                }`
-                            },
-                                React.createElement(Filter, { size: 20 })
-                            )
-                        )
-                    ),
+                    'testing': ['test', 'unit test', 'integration', 'mock', 'jest', 'pyte
