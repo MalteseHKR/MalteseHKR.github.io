@@ -32,6 +32,9 @@
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iOCIgZmlsbD0idXJsKCNncmFkaWVudDApIi8+CjxwYXRoIGQ9Ik0xNiA4QzEyIDggOSAxMSA5IDE1UzEyIDIyIDE2IDIyUzIzIDE5IDIzIDE1UzIwIDggMTYgOFoiIGZpbGw9IndoaXRlIi8+CjxkZWZzPgo8bGluZWFyR3JhZGllbnQgaWQ9ImdyYWRpZW50MCIgeDE9IjAiIHkxPSIwIiB4Mj0iMzIiIHkyPSIzMiIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgo8c3RvcCBzdG9wLWNvbG9yPSIjNjY3RUVBIi8+CjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzc2NEJBMiIvPgo8L2xpbmVhckdyYWRpZW50Pgo8L2RlZnM+Cjwvc3ZnPg==">
     <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDMyIDMyIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHJ4PSI4IiBmaWxsPSJ1cmwoI2dyYWRpZW50MCkiLz4KPHA+dGggZD0iTTE2IDhDMTIgOCA5IDExIDkgMTVTMTIgMjIgMTYgMjJTMjMgMTkgMjMgMTVTMjAgOCAxNiA4WiIgZmlsbD0id2hpdGUiLz4KPGRlZnM+CjxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZGllbnQwIiB4MT0iMCIgeTE9IjAiIHgyPSIzMiIgeTI9IjMyIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CjxzdG9wIHN0b3AtY29sb3I9IiM2NjdFRUEiLz4KPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjNzY0QkEyIi8+CjwvbGluZWFyR3JhZGllbnQ+CjwvZGVmcz4KPC9zdmc+">
     
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
     <!-- Preload critical resources -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -202,16 +205,18 @@
                     
                     <!-- Featured Project: Smart Attendance System -->
                     <article class="project-card featured-project" role="listitem">
-                        <div class="project-icon" aria-hidden="true"></div>
+                        <div class="project-icon" aria-hidden="true">
+                            <i class="fas fa-cogs"></i>
+                        </div>
                         <h3>Smart Attendance System</h3>
                         <p>A comprehensive employee attendance tracking app with advanced face recognition, liveness detection, and GPS location verification. Features include admin dashboard for leave management, employee onboarding, and detailed attendance reports.</p>
                         
                         <div class="project-features" role="list" aria-label="Key features">
-                            <span class="feature-tag" role="listitem"> Face Recognition with Liveness Detection</span>
-                            <span class="feature-tag" role="listitem"> GPS Location Tracking</span>
-                            <span class="feature-tag" role="listitem"> Admin Dashboard</span>
-                            <span class="feature-tag" role="listitem"> Leave Management System</span>
-                            <span class="feature-tag" role="listitem"> Employee Photo Management</span>
+                            <span class="feature-tag" role="listitem">🔍 Face Recognition with Liveness Detection</span>
+                            <span class="feature-tag" role="listitem">📍 GPS Location Tracking</span>
+                            <span class="feature-tag" role="listitem">📊 Admin Dashboard</span>
+                            <span class="feature-tag" role="listitem">📝 Leave Management System</span>
+                            <span class="feature-tag" role="listitem">📷 Employee Photo Management</span>
                         </div>
                         
                         <div class="tech-stack" role="list" aria-label="Technologies used">
@@ -241,9 +246,9 @@
                                     <img src="assets/mobile_app_14.jpg" alt="Smart Attendance System - Help and support" class="project-image" loading="lazy" role="img">
                                 </div>
                                 <div class="carousel-nav" role="group" aria-label="Image carousel controls">
-                                    <button class="carousel-btn" id="prevBtn" onclick="moveCarousel(-1)" aria-label="Previous image" role="button">�</button>
+                                    <button class="carousel-btn" id="prevBtn" onclick="moveCarousel(-1)" aria-label="Previous image" role="button">‹</button>
                                     <span class="carousel-counter" id="carouselCounter" aria-live="polite">1 / 14</span>
-                                    <button class="carousel-btn" id="nextBtn" onclick="moveCarousel(1)" aria-label="Next image" role="button">�</button>
+                                    <button class="carousel-btn" id="nextBtn" onclick="moveCarousel(1)" aria-label="Next image" role="button">›</button>
                                 </div>
                                 <div class="carousel-indicators" id="carouselIndicators" role="group" aria-label="Image indicators">
                                     <!-- Dots will be generated by JavaScript -->
@@ -254,19 +259,21 @@
                     
                     <!-- Malta Wage Calculator -->
                     <article class="project-card" role="listitem">
-                        <div class="project-icon" aria-hidden="true"></div>
+                        <div class="project-icon" aria-hidden="true">
+                            <i class="fas fa-calculator"></i>
+                        </div>
                         <h3>Malta Wage Calculator</h3>
                         <p>Desktop application that accurately calculates wages and salaries according to Maltese employment laws and regulations. Handles complex tax calculations, overtime rates, and statutory deductions.</p>
                         
                         <div class="project-status">
-                            <span class="status-badge" role="status" aria-label="Project status"> In Development</span>
+                            <span class="status-badge" role="status" aria-label="Project status">🚧 In Development</span>
                         </div>
                         
                         <div class="project-features" role="list" aria-label="Key features">
-                            <span class="feature-tag" role="listitem"> Malta Tax Compliance</span>
-                            <span class="feature-tag" role="listitem"> Overtime Calculations</span>
-                            <span class="feature-tag" role="listitem"> Statutory Deductions</span>
-                            <span class="feature-tag" role="listitem"> Payslip Generation</span>
+                            <span class="feature-tag" role="listitem">🇲🇹 Malta Tax Compliance</span>
+                            <span class="feature-tag" role="listitem">⏰ Overtime Calculations</span>
+                            <span class="feature-tag" role="listitem">💰 Statutory Deductions</span>
+                            <span class="feature-tag" role="listitem">📄 Payslip Generation</span>
                         </div>
                         
                         <div class="tech-stack" role="list" aria-label="Technologies used">
@@ -278,16 +285,18 @@
                     
                     <!-- AI Chat Assistant -->
                     <article class="project-card" role="listitem">
-                        <div class="project-icon" aria-hidden="true"></div>
+                        <div class="project-icon" aria-hidden="true">
+                            <i class="fas fa-robot"></i>
+                        </div>
                         <h3>AI Chat Assistant</h3>
                         <p>Intelligent chatbot with natural language processing capabilities, integrated with multiple APIs for comprehensive user assistance. Features advanced reasoning, code generation, and multi-model AI processing.</p>
                         
                         <div class="project-features" role="list" aria-label="Key features">
-                            <span class="feature-tag" role="listitem"> Natural Language Processing</span>
-                            <span class="feature-tag" role="listitem"> Code Generation & Analysis</span>
-                            <span class="feature-tag" role="listitem"> Multi-Model AI Processing</span>
-                            <span class="feature-tag" role="listitem"> Real-time Analytics</span>
-                            <span class="feature-tag" role="listitem"> Cross-Browser Compatible</span>
+                            <span class="feature-tag" role="listitem">🧠 Natural Language Processing</span>
+                            <span class="feature-tag" role="listitem">💻 Code Generation & Analysis</span>
+                            <span class="feature-tag" role="listitem">🤖 Multi-Model AI Processing</span>
+                            <span class="feature-tag" role="listitem">📊 Real-time Analytics</span>
+                            <span class="feature-tag" role="listitem">🌐 Cross-Browser Compatible</span>
                         </div>
                         
                         <div class="tech-stack" role="list" aria-label="Technologies used">
@@ -308,7 +317,9 @@
                 <h2 class="section-title">Technical Skills</h2>
                 <div class="skills-grid" role="list">
                     <article class="skill-category" role="listitem">
-                        <div class="skill-icon" aria-hidden="true"></div>
+                        <div class="skill-icon" aria-hidden="true">
+                            <i class="fas fa-code"></i>
+                        </div>
                         <h3>Frontend Development</h3>
                         <div class="skill-list" aria-label="Frontend technologies">
                             React, Vue.js, Angular<br>
@@ -318,7 +329,9 @@
                     </article>
                     
                     <article class="skill-category" role="listitem">
-                        <div class="skill-icon" aria-hidden="true"></div>
+                        <div class="skill-icon" aria-hidden="true">
+                            <i class="fas fa-server"></i>
+                        </div>
                         <h3>Backend Development</h3>
                         <div class="skill-list" aria-label="Backend technologies">
                             Node.js, Python, Java<br>
@@ -328,7 +341,9 @@
                     </article>
                     
                     <article class="skill-category" role="listitem">
-                        <div class="skill-icon" aria-hidden="true"></div>
+                        <div class="skill-icon" aria-hidden="true">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
                         <h3>Mobile Development</h3>
                         <div class="skill-list" aria-label="Mobile technologies">
                             React Native, Flutter<br>
@@ -338,7 +353,9 @@
                     </article>
                     
                     <article class="skill-category" role="listitem">
-                        <div class="skill-icon" aria-hidden="true"></div>
+                        <div class="skill-icon" aria-hidden="true">
+                            <i class="fas fa-database"></i>
+                        </div>
                         <h3>Database & Cloud</h3>
                         <div class="skill-list" aria-label="Database and cloud technologies">
                             MongoDB, PostgreSQL, MySQL<br>
@@ -359,27 +376,27 @@
                     
                     <div class="contact-links" role="list" aria-label="Contact methods">
                         <a href="mailto:ssj4mic@gmail.com" class="contact-link" role="listitem" aria-label="Send email to Michael Farrugia">
-                            <span aria-hidden="true"></span>
+                            <i class="fas fa-envelope" aria-hidden="true"></i>
                             <span>Email Me</span>
                         </a>
                         
                         <a href="https://www.linkedin.com/in/michael-farrugia-167048187" class="contact-link" target="_blank" rel="noopener noreferrer" role="listitem" aria-label="Visit Michael Farrugia's LinkedIn profile (opens in new tab)">
-                            <span aria-hidden="true"></span>
+                            <i class="fab fa-linkedin" aria-hidden="true"></i>
                             <span>LinkedIn</span>
                         </a>
                         
                         <a href="https://github.com/MalteseHKR" class="contact-link" target="_blank" rel="noopener noreferrer" role="listitem" aria-label="Visit Michael Farrugia's GitHub profile (opens in new tab)">
-                            <span aria-hidden="true"></span>
+                            <i class="fab fa-github" aria-hidden="true"></i>
                             <span>GitHub</span>
                         </a>
                         
                         <a href="tel:+35679211337" class="contact-link" role="listitem" aria-label="Call Michael Farrugia on mobile 1">
-                            <span aria-hidden="true"></span>
+                            <i class="fas fa-phone" aria-hidden="true"></i>
                             <span>Call Me Mobile 1: 79211337</span>
                         </a>
                         
                         <a href="tel:+35677211337" class="contact-link" role="listitem" aria-label="Call Michael Farrugia on mobile 2">
-                            <span aria-hidden="true"></span>
+                            <i class="fas fa-phone" aria-hidden="true"></i>
                             <span>Call Me Mobile 2: 77211337</span>
                         </a>
                     </div>
@@ -390,7 +407,7 @@
 
     <!-- AI Assistant Link - Fixed Position (Bottom Right) -->
     <a href="ultimate-ai-assistant.html" class="ai-assistant-link" aria-label="Try AI Assistant - opens AI chat interface" role="button">
-        <span class="icon" aria-hidden="true"></span>
+        <i class="fas fa-robot" class="icon" aria-hidden="true"></i>
         <span>Try AI Assistant</span>
     </a>
 
@@ -405,7 +422,7 @@
 
     <!-- Console welcome message -->
     <script>
-        console.log('%c Hello there!', 'font-size: 24px; color: #ff6b6b; font-weight: bold;');
+        console.log('%c Hello there!', 'font-size: 24px; color: #ff6b6b; font-weight: bold;');
         console.log('%cWelcome to Michael Farrugia\'s Portfolio', 'font-size: 16px; color: #667eea;');
         console.log('%cInterested in the code? Check out my GitHub: https://github.com/MalteseHKR', 'font-size: 12px; color: #764ba2;');
     </script>
