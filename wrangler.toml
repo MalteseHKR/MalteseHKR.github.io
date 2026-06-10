@@ -1,0 +1,17 @@
+name = "portfolio-ai-proxy"
+main = "worker.js"
+compatibility_date = "2025-06-01"
+
+# Public, non-secret configuration (safe to commit).
+# API keys are NOT here — they are set as secrets (see README.md).
+[vars]
+PROVIDER = "gemini"                                # "gemini" (free) or "anthropic"
+MODEL = "gemini-2.5-flash"                          # gemini-2.5-flash-lite = higher free quota
+ALLOWED_ORIGIN = "https://maltesehkr.github.io"
+
+# Optional: enable per-IP rate limiting.
+# 1) wrangler kv namespace create RATE_LIMIT
+# 2) paste the returned id below and uncomment.
+# [[kv_namespaces]]
+# binding = "RATE_LIMIT"
+# id = "<your-kv-namespace-id>"
