@@ -184,77 +184,17 @@
         };
 
         const getInitialAIModels = () => ({
-            'gpt-4-turbo': { 
-                name: 'GPT-4 Turbo', 
-                strength: 'Reasoning & Code', 
-                icon: '🧠', 
+            'gemini-2.5-flash': {
+                name: 'Gemini 2.5 Flash',
+                strength: 'Fast multimodal reasoning',
+                icon: '✨',
                 active: true,
                 processing: false,
-                confidence: 0.92,
-                speed: 0.85,
-                cost: 0.03,
-                specialty: ['coding', 'reasoning', 'analysis'],
-                description: 'Advanced reasoning and code generation with superior problem-solving capabilities'
-            },
-            'claude-3-opus': { 
-                name: 'Claude 3 Opus', 
-                strength: 'Analysis & Writing', 
-                icon: '📝', 
-                active: false,
-                processing: false,
-                confidence: 0.89,
-                speed: 0.78,
-                cost: 0.025,
-                specialty: ['writing', 'analysis', 'research'],
-                description: 'Exceptional analytical writing and comprehensive research capabilities'
-            },
-            'gemini-ultra': { 
-                name: 'Gemini Ultra', 
-                strength: 'Multimodal & Research', 
-                icon: '🔍', 
-                active: false,
-                processing: false,
-                confidence: 0.87,
-                speed: 0.82,
-                cost: 0.02,
-                specialty: ['research', 'multimodal', 'search'],
-                description: 'Multimodal processing with advanced research and information synthesis'
-            },
-            'codex': { 
-                name: 'GitHub Codex', 
-                strength: 'Code Generation', 
-                icon: '💻', 
-                active: false,
-                processing: false,
-                confidence: 0.94,
-                speed: 0.91,
-                cost: 0.015,
-                specialty: ['coding', 'debugging', 'optimization'],
-                description: 'Specialized code generation with deep understanding of programming languages'
-            },
-            'dall-e-3': { 
-                name: 'DALL-E 3', 
-                strength: 'Image Generation', 
-                icon: '🎨', 
-                active: false,
-                processing: false,
-                confidence: 0.88,
-                speed: 0.65,
-                cost: 0.04,
-                specialty: ['images', 'design', 'visual'],
-                description: 'Advanced image generation with artistic coherence and creative vision'
-            },
-            'whisper': { 
-                name: 'Whisper', 
-                strength: 'Speech Recognition', 
-                icon: '🎤', 
-                active: false,
-                processing: false,
-                confidence: 0.96,
-                speed: 0.89,
-                cost: 0.006,
-                specialty: ['audio', 'transcription', 'voice'],
-                description: 'High-accuracy speech recognition and audio processing'
+                confidence: 0.9,
+                speed: 0.9,
+                cost: 0.0,
+                specialty: ['coding', 'reasoning', 'research'],
+                description: 'Google Gemini 2.5 Flash, served through a secure serverless proxy'
             }
         });
 
@@ -1227,8 +1167,8 @@ example();`,
             const [showHelp, setShowHelp] = useState(false);
             const [workspaceMode, setWorkspaceMode] = useState('coding');
             
-            const [selectedModel, setSelectedModel] = useState('gpt-4-turbo');
-            const [selectedModels, setSelectedModels] = useState(['gpt-4-turbo']);
+            const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
+            const [selectedModels, setSelectedModels] = useState(['gemini-2.5-flash']);
             const [activeAgents, setActiveAgents] = useState(['searchAgent']);
             
             const [searchResults, setSearchResults] = useState([]);
