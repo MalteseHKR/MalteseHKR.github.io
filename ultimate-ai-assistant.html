@@ -172,15 +172,45 @@
             console.error('Failed to load icons:', error);
         }
 
+        // Lucide (vanilla) exposes each icon as data: ["svg", attrs, [["path", {...}], ...]].
+        // Convert kebab-case SVG attrs to the camelCase React expects.
+        const toCamel = (k) => k.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+        const renderLucideChild = (node, key) => {
+            const [tag, attrs = {}, children] = node;
+            const props = { key };
+            for (const k in attrs) props[toCamel(k)] = attrs[k];
+            const kids = Array.isArray(children)
+                ? children.map((c, i) => renderLucideChild(c, i))
+                : null;
+            return React.createElement(tag, props, kids);
+        };
+
         const SafeIcon = ({ icon, size = 16, className = '', ...props }) => {
-            if (!icon || typeof icon !== 'function') {
-                return React.createElement('span', { 
-                    className: `inline-block ${className}`, 
-                    style: { fontSize: size + 'px' },
-                    ...props 
-                }, '□');
+            // Lucide icon-node data (the common case with the vanilla UMD build).
+            if (Array.isArray(icon) && icon[0] === 'svg') {
+                const [, attrs = {}, children = []] = icon;
+                const svgProps = {};
+                for (const k in attrs) svgProps[toCamel(k)] = attrs[k];
+                svgProps.width = size;
+                svgProps.height = size;
+                if (className) svgProps.className = className;
+                Object.assign(svgProps, props);
+                return React.createElement(
+                    'svg',
+                    svgProps,
+                    children.map((c, i) => renderLucideChild(c, i))
+                );
             }
-            return React.createElement(icon, { size, className, ...props });
+            // A React component (used by inline emoji fallbacks).
+            if (typeof icon === 'function') {
+                return React.createElement(icon, { size, className, ...props });
+            }
+            // Last resort.
+            return React.createElement('span', {
+                className: `inline-block ${className}`,
+                style: { fontSize: size + 'px' },
+                ...props
+            }, '□');
         };
 
         const getInitialAIModels = () => ({
