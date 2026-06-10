@@ -3,18 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate AI Assistant - Fixed Version</title>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <title>AI Assistant · Michael's Portfolio</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.js"></script>
     <style>
-        body { 
-            margin: 0; 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; 
-            overflow: hidden;
+        html, body {
+            margin: 0;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            -webkit-text-size-adjust: 100%;
         }
+        #root { height: 100%; }
+        /* Mobile-safe full height: dvh accounts for the browser address bar */
+        .app-shell { height: 100vh; height: 100dvh; }
         .code-block {
             background: #1a1a1a;
             border-radius: 8px;
@@ -114,6 +118,27 @@
 
     <script type="text/babel" data-plugins="transform-react-jsx">
         const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+        // ── AI backend ──────────────────────────────────────────────────────
+        // Point this at your deployed serverless proxy (see /api/README.md).
+        // Leave as "" to run in offline demo mode with canned responses.
+        const ASSISTANT_API_URL = ""; // e.g. "https://portfolio-ai-proxy.<you>.workers.dev"
+
+        async function callAssistant(history) {
+            const res = await fetch(ASSISTANT_API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ messages: history })
+            });
+            if (!res.ok) {
+                let msg = `Request failed (${res.status})`;
+                try { const e = await res.json(); if (e && e.error) msg = e.error; } catch (_) {}
+                throw new Error(msg);
+            }
+            const data = await res.json();
+            return (data.reply || "").trim();
+        }
+        // ────────────────────────────────────────────────────────────────────
         
         const icons = {};
         try {
@@ -1196,6 +1221,7 @@ example();`,
             
             const [showFilters, setShowFilters] = useState(false);
             const [showAgentPanel, setShowAgentPanel] = useState(false);
+            const [mobileNavOpen, setMobileNavOpen] = useState(false);
             const [showAnalytics, setShowAnalytics] = useState(false);
             const [showCodePanel, setShowCodePanel] = useState(false);
             const [showHelp, setShowHelp] = useState(false);
@@ -1259,6 +1285,35 @@ example();`,
                         setAgentLogs,
                         setAutonomousAgents
                     );
+
+                    // If a real backend is configured, replace the canned text with a
+                    // genuine model reply and drop the demo-only artifacts for a clean answer.
+                    if (ASSISTANT_API_URL) {
+                        try {
+                            const history = [...messages, userMessage]
+                                .filter(m => m.type === 'user' || m.type === 'ai')
+                                .map(m => ({
+                                    role: m.type === 'user' ? 'user' : 'assistant',
+                                    content: typeof m.content === 'string'
+                                        ? m.content
+                                        : (m.content && m.content.text) || ''
+                                }))
+                                .filter(m => m.content);
+
+                            const reply = await callAssistant(history);
+                            if (reply) {
+                                response.mainResponse.text = reply;
+                                response.mainResponse.confidence = undefined;
+                                response.mainResponse.insights = null;
+                                response.mainResponse.generatedCode = null;
+                                response.searchResults = [];
+                                response.agentResults = {};
+                            }
+                        } catch (err) {
+                            console.error('Assistant backend error:', err);
+                            addNotification('Live assistant unavailable — showing demo response', 'warning');
+                        }
+                    }
 
                     const aiMessage = {
                         id: Date.now() + 1,
@@ -1680,11 +1735,12 @@ Search Agent - Performs intelligent web searches`
                 if (!showAnalytics) return null;
 
                 return (
-                    <div className="w-96 bg-gray-800 border-l border-gray-700 p-4 space-y-4 overflow-y-auto">
+                    <div className="fixed lg:static inset-y-0 right-0 z-40 w-full sm:w-96 max-w-full flex-shrink-0 bg-gray-800 border-l border-gray-700 p-4 space-y-4 overflow-y-auto">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold flex items-center gap-2">
                                 <SafeIcon icon={icons.BarChart3} size={20} />
                                 Analytics Dashboard
+                                <span className="text-[10px] font-normal uppercase tracking-wide bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">Demo data</span>
                             </h3>
                             <button
                                 onClick={() => setShowAnalytics(false)}
@@ -1851,7 +1907,7 @@ Search Agent - Performs intelligent web searches`
                 if (!showAgentPanel) return null;
 
                 return (
-                    <div className="w-80 bg-gray-800 border-l border-gray-700 p-4 space-y-4 overflow-y-auto">
+                    <div className="fixed lg:static inset-y-0 right-0 z-40 w-full sm:w-80 max-w-full flex-shrink-0 bg-gray-800 border-l border-gray-700 p-4 space-y-4 overflow-y-auto">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold flex items-center gap-2">
                                 <SafeIcon icon={icons.Settings} size={20} />
@@ -2018,7 +2074,7 @@ Search Agent - Performs intelligent web searches`
                 );
             };
             return (
-                <div className="flex h-screen bg-gray-900 text-white">
+                <div className="flex app-shell bg-gray-900 text-white overflow-hidden">
                     <div className="fixed top-4 right-4 z-50 space-y-2">
                         {notifications.map(notification => (
                             <div
@@ -2045,768 +2101,11 @@ Search Agent - Performs intelligent web searches`
 
                     <HelpModal />
 
-                    <div className="w-64 bg-gray-800 border-r border-gray-700 p-4 space-y-4">
-                        <div className="flex items-center gap-2 mb-6">
-                            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                                <SafeIcon icon={icons.Bot} size={20} />
-                            </div>
-                            <h1 className="text-xl font-bold">AI Assistant</h1>
-                        </div>
+                    {mobileNavOpen && (
+                        <div
+                            onClick={() => setMobileNavOpen(false)}
+                            className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+                        />
+                    )}
 
-                        <div>
-                            <h3 className="text-sm font-medium mb-2 text-gray-300">Workspace Mode</h3>
-                            <div className="space-y-1">
-                                {Object.entries(workspaceModes).map(([mode, config]) => (
-                                    <button
-                                        key={mode}
-                                        onClick={() => setWorkspaceMode(mode)}
-                                        className={`w-full flex items-center gap-2 p-2 rounded transition-colors ${
-                                            workspaceMode === mode
-                                                ? 'bg-blue-600 text-white'
-                                                : 'text-gray-300 hover:bg-gray-700'
-                                        }`}
-                                    >
-                                        <SafeIcon icon={config.icon} size={16} />
-                                        <span className="text-sm">{config.label}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div>
-                            <h3 className="text-sm font-medium mb-2 text-gray-300">AI Models</h3>
-                            <div className="space-y-1">
-                                {Object.entries(aiModels).map(([key, model]) => (
-                                    <div key={key} className="flex items-center justify-between p-2 bg-gray-700 rounded">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm">{model.icon}</span>
-                                            <span className="text-sm text-gray-300">{model.name}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className={`w-2 h-2 rounded-full ${
-                                                model.processing ? 'bg-yellow-400 animate-pulse' :
-                                                model.active ? 'bg-green-400' : 'bg-gray-500'
-                                            }`} />
-                                            <button
-                                                onClick={() => toggleModel(key)}
-                                                className="text-xs text-gray-400 hover:text-white"
-                                            >
-                                                {model.active ? 'ON' : 'OFF'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div>
-                            <h3 className="text-sm font-medium mb-2 text-gray-300">Agents</h3>
-                            <div className="space-y-1">
-                                {Object.entries(autonomousAgents).map(([key, agent]) => (
-                                    <div key={key} className="flex items-center justify-between p-2 bg-gray-700 rounded">
-                                        <div className="flex items-center gap-2">
-                                            <SafeIcon icon={agent.icon} size={14} />
-                                            <span className="text-sm text-gray-300">{agent.name}</span>
-                                        </div>
-                                        <label className="toggle-switch">
-                                            <input
-                                                type="checkbox"
-                                                checked={agent.active}
-                                                onChange={() => toggleAgent(key)}
-                                            />
-                                            <span className="toggle-slider"></span>
-                                        </label>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="bg-gray-700 rounded-lg p-3">
-                            <h3 className="text-sm font-medium mb-2 text-gray-300">Analytics</h3>
-                            <div className="space-y-1 text-xs">
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Total Queries:</span>
-                                    <span>{analyticsData.totalQueries}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Success Rate:</span>
-                                    <span className="text-green-400">{analyticsData.successRate}%</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Avg Response:</span>
-                                    <span>{analyticsData.avgResponseTime}s</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Satisfaction:</span>
-                                    <span className="text-yellow-400">{analyticsData.userSatisfaction}/5</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-gray-700 rounded-lg p-3">
-                            <h3 className="text-sm font-medium mb-2 text-gray-300">Quick Actions</h3>
-                            <div className="space-y-2">
-                                <button
-                                    onClick={() => setShowAnalytics(!showAnalytics)}
-                                    className="w-full text-left text-xs text-gray-400 hover:text-white p-1 hover:bg-gray-600 rounded"
-                                >
-                                    📊 View Analytics
-                                </button>
-                                <button
-                                    onClick={() => setShowAgentPanel(!showAgentPanel)}
-                                    className="w-full text-left text-xs text-gray-400 hover:text-white p-1 hover:bg-gray-600 rounded"
-                                >
-                                    ⚙️ Agent Settings
-                                </button>
-                                <button
-                                    onClick={() => setShowHelp(true)}
-                                    className="w-full text-left text-xs text-gray-400 hover:text-white p-1 hover:bg-gray-600 rounded"
-                                >
-                                    ❓ Help & Shortcuts
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex-1 flex flex-col">
-                        <div className="bg-gray-800 border-b border-gray-700 p-4">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex items-center gap-2">
-                                        <div className={`w-3 h-3 rounded-full ${
-                                            isLoading ? 'bg-yellow-400 animate-pulse' : 
-                                            isProcessing ? 'bg-blue-400 animate-pulse' :
-                                            'bg-green-400'
-                                        }`} />
-                                        <span className="text-sm font-medium">
-                                            {isLoading ? 'Processing...' : 
-                                             isProcessing ? 'Thinking...' : 
-                                             'Ready'}
-                                        </span>
-                                    </div>
-                                    <div className="text-sm text-gray-400">
-                                        {workspaceModes[workspaceMode].label} Mode
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => setShowAnalytics(!showAnalytics)}
-                                        className={`p-2 rounded transition-colors ${
-                                            showAnalytics ? 'bg-blue-600 text-white' : 'hover:bg-gray-700'
-                                        }`}
-                                        title="Analytics"
-                                    >
-                                        <SafeIcon icon={icons.BarChart3} size={16} />
-                                    </button>
-                                    <button
-                                        onClick={() => setShowAgentPanel(!showAgentPanel)}
-                                        className={`p-2 rounded transition-colors ${
-                                            showAgentPanel ? 'bg-blue-600 text-white' : 'hover:bg-gray-700'
-                                        }`}
-                                        title="Agent Settings"
-                                    >
-                                        <SafeIcon icon={icons.Settings} size={16} />
-                                    </button>
-                                    <button
-                                        onClick={() => setShowHelp(true)}
-                                        className="p-2 hover:bg-gray-700 rounded"
-                                        title="Help (Ctrl+?)"
-                                    >
-                                        <SafeIcon icon={icons.Info} size={16} />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                            {messages.length === 0 && (
-                                <div className="text-center text-gray-400 py-8">
-                                    <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <SafeIcon icon={icons.Bot} size={32} className="text-white" />
-                                    </div>
-                                    <h2 className="text-xl font-semibold mb-2">Welcome to AI Assistant</h2>
-                                    <p className="mb-4">Your intelligent coding companion with multi-model AI and autonomous agents</p>
-                                    <div className="flex flex-wrap gap-2 justify-center">
-                                        {quickSuggestions.map((suggestion, idx) => (
-                                            <button
-                                                key={idx}
-                                                onClick={() => setInput(suggestion)}
-                                                className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-full text-sm transition-colors border border-gray-600 hover:border-gray-500"
-                                            >
-                                                {suggestion}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {renderDetailedMessages()}
-                            
-                            {isLoading && (
-                                <div className="flex justify-start">
-                                    <div className="bg-gray-700 p-4 rounded-lg">
-                                        <div className="flex items-center gap-2">
-                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400" />
-                                            <span className="text-sm">
-                                                {isThinking && 'Thinking...'}
-                                                {isLearning && !isThinking && 'Learning...'}
-                                                {isProcessing && !isThinking && !isLearning && 'Processing...'}
-                                                {!isThinking && !isLearning && !isProcessing && 'Generating response...'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            
-                            <div ref={messagesEndRef} />
-                        </div>
-
-                        <div className="border-t border-gray-700 p-4 bg-gray-800">
-                            {quickSuggestions.length > 0 && (
-                                <div className="mb-4">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <SafeIcon icon={icons.Lightbulb} size={16} className="text-yellow-400" />
-                                        <span className="text-sm font-medium text-gray-300">Quick Suggestions:</span>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {quickSuggestions.map((suggestion, idx) => (
-                                            <button
-                                                key={idx}
-                                                onClick={() => setInput(suggestion)}
-                                                className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-full text-xs text-gray-300 hover:text-white transition-colors border border-gray-600 hover:border-gray-500"
-                                            >
-                                                {suggestion}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="flex gap-3">
-                                <div className="flex-1 relative">
-                                    <textarea
-                                        value={input}
-                                        onChange={(e) => setInput(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                e.preventDefault();
-                                                handleSend();
-                                            }
-                                        }}
-                                        placeholder={`Ask me anything... (Current workspace: ${workspaceMode})`}
-                                        className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                        rows={Math.min(input.split('\n').length, 4)}
-                                        disabled={isLoading}
-                                    />
-                                    <div className="absolute bottom-2 right-2 flex items-center gap-2">
-                                        <span className="text-xs text-gray-500">{input.length} chars</span>
-                                        {input.length > 0 && (
-                                            <span className="text-xs text-gray-400">⏎ Send • ⇧⏎ New line</span>
-                                        )}
-                                    </div>
-                                </div>
-                                
-                                <div className="flex flex-col gap-2">
-                                    <button
-                                        onClick={handleSend}
-                                        disabled={!input.trim() || isLoading}
-                                        className={`px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center gap-2 ${
-                                            isLoading ? 'animate-pulse' : ''
-                                        }`}
-                                    >
-                                        {isLoading ? (
-                                            <>
-                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                                Processing...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <SafeIcon icon={icons.Send} size={16} />
-                                                Send
-                                            </>
-                                        )}
-                                    </button>
-                                    
-                                    <div className="flex gap-1">
-                                        <button
-                                            onClick={() => setInput('')}
-                                            disabled={!input.trim()}
-                                            className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
-                                            title="Clear input"
-                                        >
-                                            <SafeIcon icon={icons.X} size={16} />
-                                        </button>
-                                        <button
-                                            onClick={() => addNotification('Voice input not yet implemented', 'info')}
-                                            className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
-                                            title="Voice input"
-                                        >
-                                            <SafeIcon icon={icons.Mic} size={16} />
-                                        </button>
-                                        <button
-                                            onClick={() => addNotification('File upload not yet implemented', 'info')}
-                                            className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
-                                            title="Upload file"
-                                        >
-                                            <SafeIcon icon={icons.CloudUpload} size={16} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
-                                <div className="flex items-center gap-4">
-                                    <span>{workspaceModes[workspaceMode].label} mode</span>
-                                    <span>{Object.values(aiModels).filter(m => m.active).length} models active</span>
-                                    <span>{Object.values(autonomousAgents).filter(a => a.active).length} agents enabled</span>
-                                    {Object.values(aiModels).some(m => m.processing) && (
-                                        <span className="text-yellow-400 animate-pulse">🔄 Processing...</span>
-                                    )}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span>{messages.length} messages</span>
-                                    <span className="text-green-400">Ready</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <AnalyticsPanel />
-                    <AgentPanel />
-                </div>
-            );
-        };
-        class ErrorBoundary extends React.Component {
-            constructor(props) {
-                super(props);
-                this.state = { hasError: false, error: null, errorInfo: null };
-            }
-
-            static getDerivedStateFromError(error) {
-                return { hasError: true, error };
-            }
-
-            componentDidCatch(error, errorInfo) {
-                this.setState({ errorInfo });
-                console.error('Error caught by boundary:', error, errorInfo);
-            }
-
-            render() {
-                if (this.state.hasError) {
-                    return (
-                        <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
-                            <div className="text-center">
-                                <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    ⚠️
-                                </div>
-                                <h2 className="text-xl font-semibold mb-2">Something went wrong</h2>
-                                <p className="text-gray-400 mb-4">The AI Assistant encountered an unexpected error.</p>
-                                {this.state.error && (
-                                    <pre className="text-xs text-gray-500 mb-4 max-w-md overflow-auto">
-                                        {this.state.error.toString()}
-                                    </pre>
-                                )}
-                                <button
-                                    onClick={() => window.location.reload()}
-                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
-                                >
-                                    Reload Application
-                                </button>
-                            </div>
-                        </div>
-                    );
-                }
-                return this.props.children;
-            }
-        }
-
-        const themeManager = {
-            themes: {
-                dark: {
-                    primary: '#1f2937',
-                    secondary: '#374151',
-                    accent: '#3b82f6',
-                    text: '#ffffff',
-                    textSecondary: '#d1d5db'
-                },
-                light: {
-                    primary: '#ffffff',
-                    secondary: '#f3f4f6',
-                    accent: '#3b82f6',
-                    text: '#1f2937',
-                    textSecondary: '#6b7280'
-                },
-                blue: {
-                    primary: '#1e3a8a',
-                    secondary: '#3730a3',
-                    accent: '#60a5fa',
-                    text: '#ffffff',
-                    textSecondary: '#cbd5e1'
-                }
-            },
-            currentTheme: 'dark',
-            applyTheme: (themeName) => {
-                const theme = themeManager.themes[themeName];
-                if (theme) {
-                    document.documentElement.style.setProperty('--color-primary', theme.primary);
-                    document.documentElement.style.setProperty('--color-secondary', theme.secondary);
-                    document.documentElement.style.setProperty('--color-accent', theme.accent);
-                    document.documentElement.style.setProperty('--color-text', theme.text);
-                    document.documentElement.style.setProperty('--color-text-secondary', theme.textSecondary);
-                    themeManager.currentTheme = themeName;
-                    console.log(`🎨 Theme changed to: ${themeName}`);
-                }
-            }
-        };
-
-        const autoSave = () => {
-            try {
-                const saveData = {
-                    timestamp: new Date().toISOString(),
-                    version: '2.0.0',
-                    performance: getPerformanceReport(),
-                    settings: {
-                        workspaceMode: 'coding',
-                        activeAgents: ['searchAgent'],
-                        autoMode: {
-                            codeGeneration: true,
-                            testing: true,
-                            optimization: true
-                        }
-                    }
-                };
-                
-                console.log('💾 Auto-save completed:', saveData);
-                return saveData;
-            } catch (error) {
-                console.error('❌ Auto-save failed:', error);
-                return null;
-            }
-        };
-
-        const exportManager = {
-            exportChat: () => {
-                const chatData = {
-                    timestamp: new Date().toISOString(),
-                    version: '2.0.0',
-                    messages: [],
-                    performance: getPerformanceReport(),
-                    settings: {
-                        workspaceMode: 'coding',
-                        activeAgents: ['searchAgent'],
-                        models: [],
-                    }
-                };
-                
-                const blob = new Blob([JSON.stringify(chatData, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `ai-assistant-chat-${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                console.log('📁 Chat exported successfully');
-                return chatData;
-            },
-            
-            exportAnalytics: () => {
-                const analyticsData = {
-                    timestamp: new Date().toISOString(),
-                    version: '2.0.0',
-                    performance: getPerformanceReport(),
-                    metrics: {
-                        totalQueries: 247,
-                        successRate: 94.6,
-                        avgResponseTime: 2.1,
-                        userSatisfaction: 4.8
-                    }
-                };
-                
-                const blob = new Blob([JSON.stringify(analyticsData, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `ai-assistant-analytics-${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                console.log('📊 Analytics exported successfully');
-                return analyticsData;
-            }
-        };
-
-        const utilities = {
-            generateUUID: () => {
-                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-                    return v.toString(16);
-                });
-            },
-            
-            formatBytes: (bytes, decimals = 2) => {
-                if (bytes === 0) return '0 Bytes';
-                const k = 1024;
-                const dm = decimals < 0 ? 0 : decimals;
-                const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-                return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-            },
-            
-            formatTime: (seconds) => {
-                const hours = Math.floor(seconds / 3600);
-                const minutes = Math.floor((seconds % 3600) / 60);
-                const secs = Math.floor(seconds % 60);
-                
-                if (hours > 0) {
-                    return `${hours}h ${minutes}m ${secs}s`;
-                } else if (minutes > 0) {
-                    return `${minutes}m ${secs}s`;
-                } else {
-                    return `${secs}s`;
-                }
-            },
-            
-            copyToClipboard: async (text) => {
-                try {
-                    await navigator.clipboard.writeText(text);
-                    console.log('📋 Copied to clipboard successfully');
-                    return true;
-                } catch (err) {
-                    console.error('❌ Failed to copy to clipboard:', err);
-                    return false;
-                }
-            }
-        };
-
-        const App = () => {
-            const [isInitialized, setIsInitialized] = useState(false);
-            const [error, setError] = useState(null);
-
-            useEffect(() => {
-                console.log('🚀 AI Assistant initializing...');
-                
-                try {
-                    if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
-                        throw new Error('React not loaded properly');
-                    }
-                    
-                    if (typeof icons.Search === 'undefined') {
-                        console.warn('Icons not loaded, using fallbacks');
-                    }
-                    
-                    setTimeout(() => {
-                        setIsInitialized(true);
-                        console.log('✅ AI Assistant initialized successfully!');
-                    }, 1000);
-                    
-                } catch (err) {
-                    console.error('Initialization error:', err);
-                    setError(err.message);
-                }
-            }, []);
-
-            if (error) {
-                return (
-                    <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
-                        <div className="text-center">
-                            <h2 className="text-xl font-semibold mb-2 text-red-400">Initialization Error</h2>
-                            <p className="text-gray-400 mb-4">{error}</p>
-                            <button
-                                onClick={() => window.location.reload()}
-                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
-                            >
-                                Reload
-                            </button>
-                        </div>
-                    </div>
-                );
-            }
-
-            if (!isInitialized) {
-                return (
-                    <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
-                        <div className="text-center">
-                            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                            </div>
-                            <h2 className="text-xl font-semibold mb-2">Initializing AI Assistant</h2>
-                            <p className="text-gray-400">Loading models and agents...</p>
-                        </div>
-                    </div>
-                );
-            }
-
-            return (
-                <ErrorBoundary>
-                    <UltimateAIAssistant />
-                </ErrorBoundary>
-            );
-        };
-
-        window.debugAI = {
-            getState: () => ({
-                info: 'AI Assistant Debug Interface',
-                status: 'Running',
-                version: '2.0.0',
-                uptime: utilities.formatTime((Date.now() - performanceMetrics.startTime) / 1000),
-                performance: getPerformanceReport(),
-                theme: themeManager.currentTheme
-            }),
-            
-            reload: () => {
-                console.log('🔄 Reloading AI Assistant...');
-                window.location.reload();
-            },
-            
-            test: () => {
-                console.log('🧪 Running system tests...');
-                const tests = [
-                    { name: 'Theme Manager', result: themeManager.currentTheme === 'dark' },
-                    { name: 'Performance Monitor', result: typeof performanceMetrics === 'object' },
-                    { name: 'Export Manager', result: typeof exportManager.exportChat === 'function' },
-                    { name: 'Utilities', result: typeof utilities.generateUUID === 'function' }
-                ];
-                
-                tests.forEach(test => {
-                    console.log(`${test.result ? '✅' : '❌'} ${test.name}: ${test.result ? 'PASS' : 'FAIL'}`);
-                });
-                
-                const passedTests = tests.filter(t => t.result).length;
-                console.log(`🎯 Tests completed: ${passedTests}/${tests.length} passed`);
-                return { passed: passedTests, total: tests.length, success: passedTests === tests.length };
-            },
-            
-            exportData: () => {
-                console.log('📤 Exporting all data...');
-                return exportManager.exportChat();
-            },
-            
-            theme: {
-                current: () => themeManager.currentTheme,
-                set: (theme) => themeManager.applyTheme(theme),
-                list: () => Object.keys(themeManager.themes)
-            },
-            
-            utils: utilities,
-            
-            export: {
-                chat: exportManager.exportChat,
-                analytics: exportManager.exportAnalytics
-            },
-            
-            system: {
-                memory: () => {
-                    if (performance.memory) {
-                        return {
-                            used: utilities.formatBytes(performance.memory.usedJSHeapSize),
-                            total: utilities.formatBytes(performance.memory.totalJSHeapSize),
-                            limit: utilities.formatBytes(performance.memory.jsHeapSizeLimit)
-                        };
-                    }
-                    return 'Memory API not available';
-                }
-            }
-        };
-
-        const keyboardShortcuts = {
-            'ctrl+k': () => document.querySelector('textarea')?.focus(),
-            'ctrl+shift+a': () => console.log('Toggle agents panel'),
-            'ctrl+shift+d': () => console.log('Toggle analytics panel'),
-            'ctrl+?': () => console.log('Show help'),
-            'ctrl+shift+r': () => window.location.reload(),
-            'ctrl+shift+s': () => autoSave(),
-            'ctrl+shift+t': () => themeManager.applyTheme(themeManager.currentTheme === 'dark' ? 'light' : 'dark'),
-            'escape': () => console.log('Close all panels')
-        };
-
-        const handleGlobalKeyboard = (event) => {
-            const key = [];
-            if (event.ctrlKey || event.metaKey) key.push('ctrl');
-            if (event.shiftKey) key.push('shift');
-            if (event.altKey) key.push('alt');
-            key.push(event.key.toLowerCase());
-            
-            const shortcut = key.join('+');
-            if (keyboardShortcuts[shortcut]) {
-                event.preventDefault();
-                keyboardShortcuts[shortcut]();
-            }
-        };
-
-        document.addEventListener('keydown', handleGlobalKeyboard);
-
-        try {
-            const root = ReactDOM.createRoot(document.getElementById('root'));
-            root.render(React.createElement(App));
-            console.log('✅ React app rendered successfully');
-        } catch (error) {
-            console.error('❌ Failed to render React app:', error);
-            document.getElementById('root').innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #1f2937; color: white; font-family: system-ui;">
-                    <div style="text-align: center;">
-                        <h2>Failed to Load Application</h2>
-                        <p>Error: ${error.message}</p>
-                        <button onclick="window.location.reload()" style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                            Reload
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        setInterval(autoSave, 30000);
-
-        window.addEventListener('error', (event) => {
-            console.error('Global error:', event.error);
-        });
-
-        window.addEventListener('unhandledrejection', (event) => {
-            console.error('Unhandled promise rejection:', event.reason);
-        });
-
-        setTimeout(() => {
-            console.log(`
-🎉 ULTIMATE AI ASSISTANT - FULLY COMPLETE! 🎉
-
-✅ Core Features:
-• Multi-model AI processing (6 models)
-• Autonomous agents system (8 agents)  
-• Real-time analytics dashboard
-• Advanced code generation & highlighting
-• Smart search with ranking
-• Responsive UI with animations
-• Error handling & recovery
-• Notification system
-• Help system with shortcuts
-• Message history & persistence
-
-🔧 Technical Implementation:
-• React 18 with modern hooks
-• Tailwind CSS responsive design
-• Lucide React icon system
-• Error boundaries & fallbacks
-• State management patterns
-• Component lifecycle optimization
-
-🛠️ FIXED ISSUES:
-• SafeIcon component prevents errors
-• Proper error boundaries
-• Icon fallback system
-• Comprehensive error handling
-• Safe React rendering
-
-Status: ✅ 100% COMPLETE & OPERATIONAL
-
-🌟 Ready for production deployment! 🌟
-
-🚀 Your AI Assistant is ready to use!
-            `);
-        }, 2000);
-    </script>
-</body>
-</html>
+                    <div className={`${mobileNavOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transform transition-transform duration-200 ease-in-out fixed
