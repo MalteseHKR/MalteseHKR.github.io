@@ -122,7 +122,7 @@
         // ── AI backend ──────────────────────────────────────────────────────
         // Point this at your deployed serverless proxy (see /api/README.md).
         // Leave as "" to run in offline demo mode with canned responses.
-        const ASSISTANT_API_URL = ""; // e.g. "https://portfolio-ai-proxy.<you>.workers.dev"
+        const ASSISTANT_API_URL = "gentle-silence-6994.ssj4mic.workers.dev"; // e.g. "https://portfolio-ai-proxy.<you>.workers.dev"
 
         async function callAssistant(history) {
             const res = await fetch(ASSISTANT_API_URL, {
