@@ -2308,9 +2308,9 @@ Search Agent - Performs intelligent web searches`
                             <div ref={messagesEndRef} />
                         </div>
 
-                        <div className="border-t border-gray-700 p-4 bg-gray-800">
+                        <div className="border-t border-gray-700 p-3 sm:p-4 bg-gray-800">
                             {quickSuggestions.length > 0 && (
-                                <div className="mb-4">
+                                <div className="hidden sm:block mb-3">
                                     <div className="flex items-center gap-2 mb-2">
                                         <SafeIcon icon={icons.Lightbulb} size={16} className="text-yellow-400" />
                                         <span className="text-sm font-medium text-gray-300">Quick Suggestions:</span>
@@ -2340,8 +2340,8 @@ Search Agent - Performs intelligent web searches`
                                                 handleSend();
                                             }
                                         }}
-                                        placeholder={`Ask me anything... (Current workspace: ${workspaceMode})`}
-                                        className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                        placeholder="Ask me anything…"
+                                        className="w-full p-3 min-h-[48px] text-base bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                                         rows={Math.min(input.split('\n').length, 4)}
                                         disabled={isLoading}
                                     />
@@ -2357,7 +2357,7 @@ Search Agent - Performs intelligent web searches`
                                     <button
                                         onClick={handleSend}
                                         disabled={!input.trim() || isLoading}
-                                        className={`px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                                        className={`px-4 sm:px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center gap-2 ${
                                             isLoading ? 'animate-pulse' : ''
                                         }`}
                                     >
@@ -2401,8 +2401,8 @@ Search Agent - Performs intelligent web searches`
                                 </div>
                             </div>
                             
-                            <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
-                                <div className="flex items-center gap-4">
+                            <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-gray-500">
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                                     <span>{workspaceModes[workspaceMode].label} mode</span>
                                     <span>{Object.values(aiModels).filter(m => m.active).length} models active</span>
                                     <span>{Object.values(autonomousAgents).filter(a => a.active).length} agents enabled</span>
